@@ -2,17 +2,16 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
-import logo from './logo.svg';
 
 class MenuItem extends React.Component {
   render() {
     return <li className="tables">
       <div 
         className="btns" 
-        onClick={() => {alert(`click ${this.props.value[0]}`)}}  
+        onClick={this.props.tableClicked}
         id={this.props.value[0]}
       >
-          {this.props.value[1]}
+        {this.props.value[1]}
       </div>
     </li>
   }
@@ -20,7 +19,10 @@ class MenuItem extends React.Component {
 
 class Menu extends React.Component {
   renderMenuItems(a, b){
-    return <MenuItem value = {[a,b]}/>
+    return <MenuItem 
+      value = {[a,b]}
+      tableClicked = {this.props.tableClicked}
+    />
   }
   render() {
     return (
@@ -33,17 +35,34 @@ class Menu extends React.Component {
 }
 
 class Header extends React.Component {
-  renderMenu(a){
-    return <Menu value={a} />;
+  constructor(props) {
+    super(props)
+    this.state = {
+      pages: [],
+      items: [],
+      table: ""
+    }
+    this.tableClicked = this.tableClicked.bind(this);
   }
+
+  tableClicked = (event) => {
+    this.setState({table: event.target.id})
+  }
+
+  renderMenu(){
+    return <Menu 
+      tableClicked = {this.tableClicked}
+    />;
+  }
+
   render() {
     return (
       <div id = "header">
         <div id="menu">
             <div id = "tables" className = "btns">Таблицы
-                {this.renderMenu('mda')}
+                {this.renderMenu()}
             </div>
-            <div id = "shapbtns">
+            <div id = "shapbtns" style={{display: "none"}}>
                 <button id ="addbtn">Добавить</button>
             </div>
         </div>
@@ -60,20 +79,16 @@ class App extends React.Component {
     return (
       <div className="App">
         {this.renderHeader()}
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/index.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+        <div id = "main">
+          <div id = "maindata" style={{height: "90%", overflow: "auto"}}>
+              <div className = "data" id = "people" style = {{display: "none"}}>Пользователи</div>
+              <div className = "data" id = "access" style = {{display: "none"}}>Пользовательский доступ</div>
+          </div>
+          <div id = "pages" style={{height: "5%", overflow: "auto"}}>
+              <div className = "pages" id = "people" style = {{display: "none"}}></div>
+              <div className = "pages" id = "access" style = {{display: "none"}}></div>
+          </div>
+        </div>
       </div>
     );
   }
