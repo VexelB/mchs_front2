@@ -3,6 +3,18 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
+const ws = new WebSocket("ws://localhost:8081")
+
+let get = (x, i) => {
+  let reqbody = {};
+  reqbody.action = "get";
+  reqbody.table = x;
+  reqbody.page = i;
+  reqbody.sql = `select * from ${x} limit ${(i-1)*50}, 50`;
+  ws.send(JSON.stringify(reqbody));
+  reqbody = {};
+}
+
 class MenuItem extends React.Component {
   render() {
     return <li className="tables">
@@ -35,12 +47,56 @@ class Menu extends React.Component {
 }
 
 class Header extends React.Component {
+
+  renderMenu(){
+    return <Menu 
+      tableClicked = {this.props.tableClicked}
+    />;
+  }
+
+  render() {
+    return (
+      <div id = "header">
+        <div id="menu">
+          <div id = "tables" className = "btns">Таблицы
+              {this.renderMenu()}
+          </div>
+        </div>
+    </div>
+    );
+  }
+}
+
+class MainData extends React.Component {
+  render(){
+    return(
+      <div id = "maindata" style={{height: "90vh", overflow: "auto"}}>
+        <div id = "shapbtns">
+          <button id ="addbtn">Добавить</button>
+        </div>
+        <div className = "data" id = {this.props.table}>{this.props.table}</div>
+      </div>
+    );
+  }
+}
+
+class Pages extends React.Component {
+  render() {
+    return(
+      <div id = "pages" style={{height: "5vh", overflow: "auto"}}>
+        <div className = "pages" id = {this.props.table}>{this.props.pages.map((i) => <div class = "page" id = {`page`+{i}}>{i}</div>)}</div>
+      </div>
+    );
+  }
+}
+
+class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      pages: [],
-      items: [],
-      table: ""
+      page: 0,
+      table: "",
+      pages: []
     }
     this.tableClicked = this.tableClicked.bind(this);
   }
@@ -49,45 +105,34 @@ class Header extends React.Component {
     this.setState({table: event.target.id})
   }
 
-  renderMenu(){
-    return <Menu 
-      tableClicked = {this.tableClicked}
-    />;
+  componentDidMount() {
+    ws.onopen = () => {
+      get('people', this.state.page)
+      get('access', this.state.page)
+    }
+    ws.onmessage = (d) => {
+      
+    }
   }
-
-  render() {
-    return (
-      <div id = "header">
-        <div id="menu">
-            <div id = "tables" className = "btns">Таблицы
-                {this.renderMenu()}
-            </div>
-            <div id = "shapbtns" style={{display: "none"}}>
-                <button id ="addbtn">Добавить</button>
-            </div>
-        </div>
-    </div>
-    );
-  }
-}
-
-class App extends React.Component {
   renderHeader() {
-    return <Header />;
+    return <Header tableClicked = {this.tableClicked}/>;
+  }
+  renderMainData() {
+    return <MainData table = {this.state.table} />
+  }
+  renderPages() {
+    return <Pages 
+      table={this.state.table} 
+      pages = {this.state.pages}
+    />
   }
   render() {
     return (
       <div className="App">
         {this.renderHeader()}
         <div id = "main">
-          <div id = "maindata" style={{height: "90%", overflow: "auto"}}>
-              <div className = "data" id = "people" style = {{display: "none"}}>Пользователи</div>
-              <div className = "data" id = "access" style = {{display: "none"}}>Пользовательский доступ</div>
-          </div>
-          <div id = "pages" style={{height: "5%", overflow: "auto"}}>
-              <div className = "pages" id = "people" style = {{display: "none"}}></div>
-              <div className = "pages" id = "access" style = {{display: "none"}}></div>
-          </div>
+          {this.renderMainData()}
+          {this.renderPages()}
         </div>
       </div>
     );
