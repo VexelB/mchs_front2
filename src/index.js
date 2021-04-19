@@ -73,7 +73,7 @@ class MainData extends React.Component {
     return(
       <div id = "maindata" style={{height: "90vh", overflow: "auto"}}>
         <div id = "shapbtns">
-          <button id ="addbtn">Добавить</button>
+          <button id ="addbtn" onClick = {this.props.editing}>Добавить</button>
         </div>
         <div className = "data" id = {this.props.table}>
           <div className = "table">
@@ -100,6 +100,16 @@ class Pages extends React.Component {
   }
 }
 
+class Editor extends React.Component {
+  render(){
+    return(
+      <div>
+        <button onClick = {this.props.editing}>Отмена</button>
+      </div>
+    );
+  }
+}
+
 class App extends React.Component {
   constructor(props) {
     super(props)
@@ -108,16 +118,20 @@ class App extends React.Component {
       table: "",
       headers: [],
       rows: [],
-      pages: []
+      pages: [],
+      editing: false
     }
     this.tableClicked = this.tableClicked.bind(this);
   }
 
   tableClicked = (event) => {
-    this.setState({table: event.target.id})
     get(event.target.id, 0)
     get(event.target.id, 1)
-    this.setState({pages: [], rows: [], headers: []})
+    this.setState({pages: [], rows: [], headers: [], table: event.target.id})
+  }
+
+  editing = (event) => {
+    this.setState({editing: !this.state.editing})
   }
 
   componentDidMount() {
@@ -154,6 +168,7 @@ class App extends React.Component {
       table={this.state.table} 
       headers={this.state.headers}
       rows={this.state.rows}
+      editing = {this.editing}
     />
   }
   renderPages() {
@@ -162,16 +177,28 @@ class App extends React.Component {
       pages={this.state.pages}
     />
   }
+  renderEditor() {
+    return <Editor editing = {this.editing}/>
+  }
   render() {
-    return (
-      <div className="App">
-        {this.renderHeader()}
-        <div id = "main">
-          {this.renderMainData()}
-          {this.renderPages()}
+    if (this.state.editing) {
+      return (
+        <div className="App">
+          {this.renderEditor()}
         </div>
-      </div>
-    );
+      );
+    }
+    else {
+      return (
+        <div className="App">
+          {this.renderHeader()}
+          <div id = "main">
+            {this.renderMainData()}
+            {this.renderPages()}
+          </div>
+        </div>
+      );
+    }
   }
 }
 
