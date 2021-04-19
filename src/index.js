@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
-const ws = new WebSocket("ws://localhost:8081")
+const ws = new WebSocket("ws://localhost:5353")
+let assoc = {}
 
 let get = (x, i) => {
   let reqbody = {};
@@ -74,7 +75,16 @@ class MainData extends React.Component {
         <div id = "shapbtns">
           <button id ="addbtn">Добавить</button>
         </div>
-        <div className = "data" id = {this.props.table}>{this.props.table}</div>
+        <div className = "data" id = {this.props.table}>
+          <div className = "table">
+            {this.props.headers.map((i) => <div className="tablehead" key={i} id={i}>{assoc[i]}</div>)}
+            {this.props.rows.map((v,i) => <div className = "row" id={"row"+i} key={"row"+i}>
+              {v.map((v,j) => <div className="rowEl" id={"row"+i+this.props.headers[j] } style={{width: document.getElementById(this.props.headers[j]).offsetWidth}}>
+                {v}
+              </div>)}
+            </div>)}
+          </div>
+        </div>
       </div>
     );
   }
@@ -84,7 +94,7 @@ class Pages extends React.Component {
   render() {
     return(
       <div id = "pages" style={{height: "5vh", overflow: "auto"}}>
-        <div className = "pages" id = {this.props.table}>{this.props.pages.map((i) => <div class = "page" id = {`page`+{i}}>{i}</div>)}</div>
+        <div className = "pages" id = {this.props.table}>{this.props.pages.map((i) => <div className = "page" id={`page`+{i}} key={`page`+{i}}>{i}</div>)}</div>
       </div>
     );
   }
@@ -96,6 +106,8 @@ class App extends React.Component {
     this.state = {
       page: 0,
       table: "",
+      headers: [],
+      rows: [],
       pages: []
     }
     this.tableClicked = this.tableClicked.bind(this);
@@ -103,27 +115,51 @@ class App extends React.Component {
 
   tableClicked = (event) => {
     this.setState({table: event.target.id})
+    get(event.target.id, 0)
+    get(event.target.id, 1)
+    this.setState({pages: [], rows: [], headers: []})
   }
 
   componentDidMount() {
     ws.onopen = () => {
-      get('people', this.state.page)
-      get('access', this.state.page)
+      
     }
     ws.onmessage = (d) => {
-      
+      let data = JSON.parse(d.data)
+      if (data.action === "assoc") {
+        for (let i in data.content) {
+          assoc[data.content[i].name] = data.content[i].value
+        }
+      }
+      else if (data.action === "pages") {
+        for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
+          this.setState({pages: [...this.state.pages, i]})
+        }
+      }
+      else if (data.action === "rows") {
+        for (let i in data.content[0]) {
+          this.setState({headers: [...this.state.headers, i]})
+        }
+        for (let i in data.content) {
+          this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
+        }
+      }
     }
   }
   renderHeader() {
     return <Header tableClicked = {this.tableClicked}/>;
   }
   renderMainData() {
-    return <MainData table = {this.state.table} />
+    return <MainData 
+      table={this.state.table} 
+      headers={this.state.headers}
+      rows={this.state.rows}
+    />
   }
   renderPages() {
     return <Pages 
       table={this.state.table} 
-      pages = {this.state.pages}
+      pages={this.state.pages}
     />
   }
   render() {

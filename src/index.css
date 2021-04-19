@@ -4,6 +4,16 @@
 .tablehead {
   background-color: #888;
   color: white;
+  display: inline;
+  border: solid 1px black; 
+}
+.rowEl {
+  display: inline-block;
+  border: solid 1px black; 
+}
+.row:hover{
+  cursor: pointer;
+  background-color: teal;
 }
 .table {
   display: inline-block;
