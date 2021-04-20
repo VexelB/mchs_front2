@@ -3,8 +3,9 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
-const ws = new WebSocket("ws://localhost:5353")
-let assoc = {}
+const ws = new WebSocket("ws://localhost:5353");
+let assoc = {};
+let datas = {"id": "2"};
 
 let get = (x, i) => {
   let reqbody = {};
@@ -14,6 +15,16 @@ let get = (x, i) => {
   reqbody.sql = `select * from ${x} limit ${(i-1)*50}, 50`;
   ws.send(JSON.stringify(reqbody));
   reqbody = {};
+}
+
+let vac = () => {
+  let result = []
+  for (let i in document.querySelectorAll(`#data input`)){
+    if (document.querySelectorAll(`#data input`)[i].value !== undefined){
+      result.push(document.querySelectorAll(`#data input`)[i].value === "" ? "-": document.querySelectorAll(`#data input`)[i].value)
+    }
+  }
+  return result
 }
 
 class MenuItem extends React.Component {
@@ -69,17 +80,25 @@ class Header extends React.Component {
 }
 
 class MainData extends React.Component {
-  render(){
-    return(
-      <div id = "maindata" style={{height: "90vh", overflow: "auto"}}>
+  renderShap(){
+    if (this.props.table !== ""){
+      return (
         <div id = "shapbtns">
           <button id ="addbtn" onClick = {this.props.editing}>Добавить</button>
         </div>
-        <div className = "data" id = {this.props.table}>
+      );
+    }
+    
+  }
+  render(){
+    return(
+      <div id = "maindata" key = "maindata" style={{height: "90vh", overflow: "auto"}}>
+        {this.renderShap()}
+        <div className = "data" id = {this.props.table} key = {this.props.table}>
           <div className = "table">
             {this.props.headers.map((i) => <div className="tablehead" key={i} id={i}>{assoc[i]}</div>)}
-            {this.props.rows.map((v,i) => <div className = "row" id={"row"+i} key={"row"+i}>
-              {v.map((v,j) => <div className="rowEl" id={"row"+i+this.props.headers[j] } style={{width: document.getElementById(this.props.headers[j]).offsetWidth}}>
+            {this.props.rows.map((v,i) => <div className = "row" id={i} key={i} onClick={this.props.editing}>
+              {v.map((v,j) => <div className="rowEl" key={"row"+i+this.props.headers[j]} id={"row"+i+this.props.headers[j]} style={{width: document.getElementById(this.props.headers[j]).offsetWidth-2}}>
                 {v}
               </div>)}
             </div>)}
@@ -101,10 +120,32 @@ class Pages extends React.Component {
 }
 
 class Editor extends React.Component {
+  renderInputs(){
+    let output = []
+    for (let i in this.props.headers) {
+      let v = this.props.headers[i]
+      if (Object.keys(datas).includes(v)) {
+        output.push(<div key={v}>{assoc[v]} <input defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={"input"+v} />
+        <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i}>{i}</option>)}</datalist>
+        </div>)
+      } else {
+        output.push(<div key={v}>{assoc[v]} <input id={"input"+v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
+      }
+    }
+    return output
+  }
   render(){
     return(
-      <div>
-        <button onClick = {this.props.editing}>Отмена</button>
+      <div id="myModal" className="modal" key="myModal">
+          <div className = "modal-content" key="modal-content">
+            <div>
+              <button id="addclose" key="addclose" onClick = {this.props.editing}>Принять</button>
+              <button id="close" key="close" onClick = {this.props.editing}>Отмена</button><br />
+              <div id="data" key="data">
+                {this.renderInputs()}
+              </div>
+            </div>
+          </div>
       </div>
     );
   }
@@ -119,9 +160,11 @@ class App extends React.Component {
       headers: [],
       rows: [],
       pages: [],
+      data: [],
+      options: {"id": [1,2,3]},
+      oldid: "",
       editing: false
     }
-    this.tableClicked = this.tableClicked.bind(this);
   }
 
   tableClicked = (event) => {
@@ -130,16 +173,34 @@ class App extends React.Component {
     this.setState({pages: [], rows: [], headers: [], table: event.target.id})
   }
 
+  valueChange = (event) => {
+    this.setState({data: event.target.value})
+  }
+
   editing = (event) => {
-    this.setState({editing: !this.state.editing})
+    if (event.target.id === "addclose") {
+      if (this.state.oldid === "") {
+        ws.send(JSON.stringify({"action": "put", "table": this.state.table, "values": vac()}));
+      } else {
+        ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": vac()}))
+      }
+    }
+    this.setState({editing: !this.state.editing, data: [], oldid: ""})
+    if (event.target.className === "rowEl") {
+      this.setState({data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
+    }
   }
 
   componentDidMount() {
     ws.onopen = () => {
       
     }
+    ws.onclose = () => {
+      alert('Соединение с сервером потеряно!');
+    }
     ws.onmessage = (d) => {
       let data = JSON.parse(d.data)
+      console.log(data)
       if (data.action === "assoc") {
         for (let i in data.content) {
           assoc[data.content[i].name] = data.content[i].value
@@ -178,27 +239,26 @@ class App extends React.Component {
     />
   }
   renderEditor() {
-    return <Editor editing = {this.editing}/>
+    if (this.state.editing) {
+      return <Editor 
+        editing = {this.editing} 
+        headers = {this.state.headers} 
+        data = {this.state.data}
+        options = {this.state.options}
+      />
+    }
   }
   render() {
-    if (this.state.editing) {
-      return (
-        <div className="App">
+    return (
+      <div className="App">
+        {this.renderHeader()}
+        <div id = "main">
           {this.renderEditor()}
+          {this.renderMainData()}
+          {this.renderPages()}
         </div>
-      );
-    }
-    else {
-      return (
-        <div className="App">
-          {this.renderHeader()}
-          <div id = "main">
-            {this.renderMainData()}
-            {this.renderPages()}
-          </div>
-        </div>
-      );
-    }
+      </div>
+    );
   }
 }
 

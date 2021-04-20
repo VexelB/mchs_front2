@@ -90,7 +90,6 @@ a {
   background-color: teal;
 }
 .modal {
-  display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
   z-index: 1; /* Sit on top */
   padding-top: 100px; /* Location of the box */
@@ -112,10 +111,4 @@ a {
 } 
 #main {
   height: 95vh;
-}
-#header {
-  height: 5vh;
-}
-#root {
-  height:100vh;
 }

@@ -43,14 +43,14 @@ wss.on('connection', (ws, req) => {
             if (d.page === 0) {
                 db.serialize(() => {
                     db.all(`select * from ${d.table}`, (err,rows) => {
-                        ws.send(JSON.stringify({action: "pages", content: rows, table: d.table}))
+                        ws.send(JSON.stringify({action: "pages", content: rows}))
                     })
                 })
             }
             else {
                 db.serialize(() => {
                     db.all(d.sql, (err,rows) => {
-                        ws.send(JSON.stringify({action: "rows", content: rows, table: d.table}))
+                        ws.send(JSON.stringify({action: "rows", content: rows}))
                     })
                 })
             }
@@ -75,11 +75,13 @@ wss.on('connection', (ws, req) => {
                   console.error(err.message, d);
                 }
             });
-            db.run(d.sql, (err)=> {
-                if (err) {
-                    console.error(err.message, d);
-                }
-            });
+            
+            // db.run(d.sql, (err)=> {
+            //     if (err) {
+            //         console.error(err.message, d);
+            //     }
+            // });
+            console.log(d)
             db.close();
         }
         else if (d.action == "book") {
@@ -128,8 +130,9 @@ wss.on('connection', (ws, req) => {
                 }
             });
             db.serialize(() => {
-                db.run(d.sql);
+                // db.run(d.sql);
             })
+            console.log(d)
             db.close();
         }
         else if (d.action == 'search') {
