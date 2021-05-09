@@ -3,25 +3,25 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
-const ws = new WebSocket("ws://localhost:5353");
+const ws = new WebSocket("ws://192.168.0.132:5353");
 let assoc = {};
-let datas = {"id": "2"};
+let datas = [];
 
 let get = (x, i) => {
   let reqbody = {};
   reqbody.action = "get";
   reqbody.table = x;
   reqbody.page = i;
-  reqbody.sql = `select * from ${x} limit ${(i-1)*50}, 50`;
   ws.send(JSON.stringify(reqbody));
   reqbody = {};
 }
 
 let vac = () => {
   let result = []
-  for (let i in document.querySelectorAll(`#data input`)){
-    if (document.querySelectorAll(`#data input`)[i].value !== undefined){
-      result.push(document.querySelectorAll(`#data input`)[i].value === "" ? "-": document.querySelectorAll(`#data input`)[i].value)
+  let all = document.querySelectorAll(`#data .input`)
+  for (let i in all){
+    if (all[i].value !== undefined){
+      result.push(all[i].value === "" ? "-": all[i].value)
     }
   }
   return result
@@ -42,17 +42,10 @@ class MenuItem extends React.Component {
 }
 
 class Menu extends React.Component {
-  renderMenuItems(a, b){
-    return <MenuItem 
-      value = {[a,b]}
-      tableClicked = {this.props.tableClicked}
-    />
-  }
   render() {
     return (
       <ul className="submenu">
-        {this.renderMenuItems("people", "Личный состав")}
-        {this.renderMenuItems("access", "Пользовательский доступ")}
+        {this.props.tables.map((a) => (<MenuItem key={a} value={[a, assoc[a]]} tableClicked={this.props.tableClicked}></MenuItem>))}
       </ul>
     );
   }
@@ -63,6 +56,7 @@ class Header extends React.Component {
   renderMenu(){
     return <Menu 
       tableClicked = {this.props.tableClicked}
+      tables = {this.props.tables}
     />;
   }
 
@@ -88,7 +82,6 @@ class MainData extends React.Component {
         </div>
       );
     }
-    
   }
   render(){
     return(
@@ -96,9 +89,9 @@ class MainData extends React.Component {
         {this.renderShap()}
         <div className = "data" id = {this.props.table} key = {this.props.table}>
           <div className = "table">
-            {this.props.headers.map((i) => <div className="tablehead" key={i} id={i}>{assoc[i]}</div>)}
+            {this.props.headers.map((i, v) => <div className="tablehead" key={i} id={i}>{assoc[i]}</div>)}
             {this.props.rows.map((v,i) => <div className = "row" id={i} key={i} onClick={this.props.editing}>
-              {v.map((v,j) => <div className="rowEl" key={"row"+i+this.props.headers[j]} id={"row"+i+this.props.headers[j]} style={{width: document.getElementById(this.props.headers[j]).offsetWidth-2}}>
+              {v.map((v,j) => <div className="rowEl" key={"row"+i+this.props.headers[j]} id={"row"+i+this.props.headers[j]}>
                 {v}
               </div>)}
             </div>)}
@@ -113,7 +106,15 @@ class Pages extends React.Component {
   render() {
     return(
       <div id = "pages" style={{height: "5vh", overflow: "auto"}}>
-        <div className = "pages" id = {this.props.table}>{this.props.pages.map((i) => <div className = "page" id={`page`+{i}} key={`page`+{i}}>{i}</div>)}</div>
+        <div className = "pages" id={this.props.table}>
+          {this.props.pages.map((i) => <div 
+            onClick={this.props.pageClick}
+            className="page" 
+            id={i} 
+            key={i}>
+              {i}
+            </div>)}
+        </div>
       </div>
     );
   }
@@ -124,12 +125,16 @@ class Editor extends React.Component {
     let output = []
     for (let i in this.props.headers) {
       let v = this.props.headers[i]
-      if (Object.keys(datas).includes(v)) {
-        output.push(<div key={v}>{assoc[v]} <input defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={"input"+v} />
+      if (Object.keys(this.props.options).includes(v)) {
+        output.push(<div key={v}>{assoc[v]} <input className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={"input"+v} />
         <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i}>{i}</option>)}</datalist>
         </div>)
-      } else {
-        output.push(<div key={v}>{assoc[v]} <input id={"input"+v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
+      }
+      else if (v.includes('date')){
+        output.push(<div key={v}>{assoc[v]} <input className="input" type="date" placeholder={assoc[v]} defaultValue={this.props.data[i]}/></div>)
+      }
+      else {
+        output.push(<div key={v}>{assoc[v]} <input className="input" id={"input"+v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
       }
     }
     return output
@@ -139,8 +144,9 @@ class Editor extends React.Component {
       <div id="myModal" className="modal" key="myModal">
           <div className = "modal-content" key="modal-content">
             <div>
-              <button id="addclose" key="addclose" onClick = {this.props.editing}>Принять</button>
-              <button id="close" key="close" onClick = {this.props.editing}>Отмена</button><br />
+              <button id="addclose" key="addclose" onClick = {this.props.editing}>Сохранить</button>
+              <button id="del" key="del" onClick = {this.props.editing}>Удалить</button>
+              <button id="close" key="close" onClick = {this.props.editing}>Закрыть</button><br />
               <div id="data" key="data">
                 {this.renderInputs()}
               </div>
@@ -155,13 +161,15 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      tables: [],
       page: 0,
       table: "",
       headers: [],
+      headwidth: [],
       rows: [],
       pages: [],
       data: [],
-      options: {"id": [1,2,3]},
+      options: {},
       oldid: "",
       editing: false
     }
@@ -170,7 +178,7 @@ class App extends React.Component {
   tableClicked = (event) => {
     get(event.target.id, 0)
     get(event.target.id, 1)
-    this.setState({pages: [], rows: [], headers: [], table: event.target.id})
+    this.setState({table: event.target.id, page: 1})
   }
 
   valueChange = (event) => {
@@ -178,56 +186,121 @@ class App extends React.Component {
   }
 
   editing = (event) => {
+    if (event.target.id === 'close'){
+      this.setState({editing: !this.state.editing, data: [], oldid: ""})
+      return
+    }
     if (event.target.id === "addclose") {
-      if (this.state.oldid === "") {
+      if (vac()[0] === '-') {
+        this.setState({editing: !this.state.editing, data: [], oldid: ""})
+        return
+      }
+      else if (this.state.oldid === "") {
         ws.send(JSON.stringify({"action": "put", "table": this.state.table, "values": vac()}));
       } else {
-        ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": vac()}))
+        ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": vac(), "headers": this.state.headers}))
       }
     }
     this.setState({editing: !this.state.editing, data: [], oldid: ""})
     if (event.target.className === "rowEl") {
       this.setState({data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
     }
+    if (event.target.id === "del") {
+      ws.send(JSON.stringify({action: "delete", table: this.state.table, id: vac()[0]}))
+    }
+    setTimeout(()=>{get(this.state.table, this.state.page); get(this.state.table, 0)}, 500) 
+  }
+
+  pageClick = (event) => {
+    this.setState({page: event.target.id})
+    get(this.state.table, event.target.id)
   }
 
   componentDidMount() {
-    ws.onopen = () => {
-      
-    }
     ws.onclose = () => {
       alert('Соединение с сервером потеряно!');
     }
     ws.onmessage = (d) => {
       let data = JSON.parse(d.data)
-      console.log(data)
       if (data.action === "assoc") {
         for (let i in data.content) {
           assoc[data.content[i].name] = data.content[i].value
         }
       }
+      else if (data.action === "options"){
+        let temp = this.state.options
+        data.content.forEach((a) => {
+          temp[a.name] = []
+        })
+        data.content.forEach((a) => {
+          temp[a.name] = [...temp[a.name], a.value]
+        })
+        this.setState({options: temp})
+      }
+      else if (data.action === "tables"){
+        let temp = this.state.options
+        data.content.forEach((a) => {
+          temp["table"] = []
+        })
+        data.content.forEach((a) => {
+          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
+            this.setState({tables: [...this.state.tables, a.name]})
+            temp["table"] = [...temp["table"], assoc[a.name]]
+          }
+        })
+        this.setState({options: temp})
+      }
+      else if (data.action === "datas"){
+        data.content.forEach((a) => {
+          let temp = {}
+          for (let i in a) {
+            temp[i] = a[i]
+          }
+          datas.push(temp)
+        })
+      }
       else if (data.action === "pages") {
+        this.setState({pages: []})
         for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
           this.setState({pages: [...this.state.pages, i]})
         }
       }
       else if (data.action === "rows") {
+        this.setState({headers: [], rows: []})
         for (let i in data.content[0]) {
-          this.setState({headers: [...this.state.headers, i]})
+          this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
         }
         for (let i in data.content) {
           this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
         }
+        for (let i in this.state.headers) {
+          let items = []
+          items.push(document.querySelector(`#${this.state.headers[i]}`))
+          for (let j in this.state.rows) {
+            items.push(document.querySelector(`#row${j}${this.state.headers[i]}`))
+          }
+          let b = []
+          console.log(items)
+          items.forEach((a)=>{b.push(a.offsetWidth)})
+          items.forEach((i) => {
+            i.setAttribute("style", `width: ${Math.max(...b)}px`)
+          })
+        }
       }
+      
     }
   }
   renderHeader() {
-    return <Header tableClicked = {this.tableClicked}/>;
+    return <Header 
+      tableClicked = {this.tableClicked}
+      tables = {this.state.tables}
+    />;
   }
   renderMainData() {
     return <MainData 
       table={this.state.table} 
       headers={this.state.headers}
+      headwidth={this.state.headwidth}
       rows={this.state.rows}
       editing = {this.editing}
     />
@@ -236,6 +309,7 @@ class App extends React.Component {
     return <Pages 
       table={this.state.table} 
       pages={this.state.pages}
+      pageClick={this.pageClick}
     />
   }
   renderEditor() {

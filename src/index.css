@@ -4,12 +4,16 @@
 .tablehead {
   background-color: #888;
   color: white;
-  display: inline;
+  display: inline-block;
   border: solid 1px black; 
+  border-left: 1px;
+  padding-left: 2px;
 }
 .rowEl {
   display: inline-block;
   border: solid 1px black; 
+  border-left: 1px;
+  padding-left: 2px;
 }
 .row:hover{
   cursor: pointer;
@@ -18,7 +22,7 @@
 .table {
   display: inline-block;
   border: solid 1px black; 
-  padding: 2px;
+  /* padding: 2px; */
 }
 nav {
   width: 660px;
