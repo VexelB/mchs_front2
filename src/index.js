@@ -7,26 +7,6 @@ const ws = new WebSocket("ws://192.168.0.132:5353");
 let assoc = {};
 let datas = [];
 
-let get = (x, i) => {
-  let reqbody = {};
-  reqbody.action = "get";
-  reqbody.table = x;
-  reqbody.page = i;
-  ws.send(JSON.stringify(reqbody));
-  reqbody = {};
-}
-
-let vac = () => {
-  let result = []
-  let all = document.querySelectorAll(`#data .input`)
-  for (let i in all){
-    if (all[i].value !== undefined){
-      result.push(all[i].value === "" ? "-": all[i].value)
-    }
-  }
-  return result
-}
-
 class MenuItem extends React.Component {
   render() {
     return <li className="tables">
@@ -175,10 +155,57 @@ class App extends React.Component {
     }
   }
 
+  get = (x, i) => {
+    let reqbody = {};
+    reqbody.action = "get";
+    reqbody.table = x;
+    reqbody.page = i;
+    let rownames = datas.map((a)=>{return a.rowname})
+    let jointables = []
+    setTimeout(()=>{
+      if (reqbody.table === this.state.table && reqbody.page !== 0) {
+        reqbody.sql = `select ${this.state.headers.map((a)=>{
+          if (rownames.includes(a)) {
+            for (let i in datas) {
+              if (datas[i].rowname === a) {
+                jointables.push(datas[i].tablename)
+                return `${datas[i].tablename.split('.')[0]}.${datas[i].tablerowname}`
+              }
+            }
+          }
+          return `${reqbody.table}.${a}`
+        })} from ${reqbody.table}`
+        for (let i in jointables) {
+          for (let j in datas) {
+            if (jointables[i] === datas[j].tablename) {
+              reqbody.sql += ` INNER JOIN ${jointables[i].split('.')[0]} on ${datas[j].rowname} = ${jointables[i]}`
+            }
+          }
+        }
+        console.log(reqbody.sql, datas)
+      } else {
+        ws.send(JSON.stringify(reqbody));
+      }
+      reqbody = {};
+    }, 10)
+  }
+  
+  vac = () => {
+    let result = []
+    let all = document.querySelectorAll(`#data .input`)
+    for (let i in all){
+      if (all[i].value !== undefined){
+        result.push(all[i].value === "" ? "-": all[i].value)
+      }
+    }
+    return result
+  }
+
   tableClicked = (event) => {
-    get(event.target.id, 0)
-    get(event.target.id, 1)
     this.setState({table: event.target.id, page: 1})
+    this.get(event.target.id, 0)
+    setTimeout(()=>{this.get(event.target.id, 1)}, 100)
+    
   }
 
   valueChange = (event) => {
@@ -191,14 +218,14 @@ class App extends React.Component {
       return
     }
     if (event.target.id === "addclose") {
-      if (vac()[0] === '-') {
+      if (this.vac()[0] === '-') {
         this.setState({editing: !this.state.editing, data: [], oldid: ""})
         return
       }
       else if (this.state.oldid === "") {
-        ws.send(JSON.stringify({"action": "put", "table": this.state.table, "values": vac()}));
+        ws.send(JSON.stringify({"action": "put", "table": this.state.table, "values": this.vac()}));
       } else {
-        ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": vac(), "headers": this.state.headers}))
+        ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": this.vac(), "headers": this.state.headers}))
       }
     }
     this.setState({editing: !this.state.editing, data: [], oldid: ""})
@@ -206,14 +233,14 @@ class App extends React.Component {
       this.setState({data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
     }
     if (event.target.id === "del") {
-      ws.send(JSON.stringify({action: "delete", table: this.state.table, id: vac()[0]}))
+      ws.send(JSON.stringify({action: "delete", table: this.state.table, id: this.vac()[0]}))
     }
-    setTimeout(()=>{get(this.state.table, this.state.page); get(this.state.table, 0)}, 500) 
+    setTimeout(()=>{this.get(this.state.table, this.state.page); this.get(this.state.table, 0)}, 500) 
   }
 
   pageClick = (event) => {
     this.setState({page: event.target.id})
-    get(this.state.table, event.target.id)
+    this.get(this.state.table, event.target.id)
   }
 
   componentDidMount() {
@@ -260,16 +287,16 @@ class App extends React.Component {
         })
       }
       else if (data.action === "pages") {
-        this.setState({pages: []})
+        this.setState({pages: [], headers: []})
         for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
           this.setState({pages: [...this.state.pages, i]})
         }
-      }
-      else if (data.action === "rows") {
-        this.setState({headers: [], rows: []})
         for (let i in data.content[0]) {
           this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
         }
+      }
+      else if (data.action === "rows") {
+        this.setState({rows: []})
         for (let i in data.content) {
           this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
         }
@@ -280,7 +307,6 @@ class App extends React.Component {
             items.push(document.querySelector(`#row${j}${this.state.headers[i]}`))
           }
           let b = []
-          console.log(items)
           items.forEach((a)=>{b.push(a.offsetWidth)})
           items.forEach((i) => {
             i.setAttribute("style", `width: ${Math.max(...b)}px`)
