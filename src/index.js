@@ -155,11 +155,10 @@ class App extends React.Component {
     }
   }
 
-  get = (x, i) => {
+  get = (x) => {
     let reqbody = {};
-    reqbody.action = "get";
+    reqbody.action = "get2";
     reqbody.table = x;
-    reqbody.page = i;
     let jointables = []
     if (reqbody.table === this.state.table && reqbody.page !== 0) {
       reqbody.sql = `select ${this.state.headers.map((a)=>{
@@ -199,9 +198,9 @@ class App extends React.Component {
   tableClicked = (event) => {
     this.setState({table: event.target.id, page: 1})
     setTimeout(()=>{
-      this.get(event.target.id, 0)
-      this.get(event.target.id, 1)
+      
     },10)
+    ws.send(JSON.stringify({action: "get", table: event.target.id}))
   }
 
   valueChange = (event) => {
@@ -231,12 +230,12 @@ class App extends React.Component {
     if (event.target.id === "del") {
       ws.send(JSON.stringify({action: "delete", table: this.state.table, id: this.vac()[0]}))
     }
-    setTimeout(()=>{this.get(this.state.table, this.state.page); this.get(this.state.table, 0)}, 10) 
+    setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
   }
 
   pageClick = (event) => {
     this.setState({page: event.target.id})
-    this.get(this.state.table, event.target.id)
+    ws.send(JSON.stringify({action: "get", table: this.state.table}))
   }
 
   componentDidMount() {
@@ -283,16 +282,18 @@ class App extends React.Component {
         })
       }
       else if (data.action === "pages") {
-        this.setState({pages: []})
-        for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
-          this.setState({pages: [...this.state.pages, i]})
-        }
-      }
-      else if (data.action === "rows") {
-        this.setState({headers: [], rows: []})
+        this.setState({headers: [], pages: [], rows: []})
         for (let i in data.content[0]) {
           this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
         }
+        for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
+          this.setState({pages: [...this.state.pages, i]})
+        }
+        setTimeout(()=>{this.get(this.state.table)},10)
+        
+      }
+      else if (data.action === "rows") {
+        this.setState({})
         for (let i in data.content) {
           this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
         }

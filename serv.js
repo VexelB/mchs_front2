@@ -39,22 +39,20 @@ wss.on('connection', (ws, req) => {
                   console.error(err.message, d);
                 }
             });
-            if (d.page === 0) {
-                db.serialize(() => {
-                    db.all(`select * from ${d.table}`, (err,rows) => {
-                        ws.send(JSON.stringify({action: "pages", content: rows}))
-                    })
-                })
-            }
-            else {
-                console.log(d.sql)
-                db.serialize(() => {
-                    db.all(d.sql, (err,rows) => {
-                        console.log()
-                        ws.send(JSON.stringify({action: "rows", content: rows}))
-                    })
-                })
-            }
+            db.all(`SELECT * from ${d.table}`, (err,rows) => {
+                ws.send(JSON.stringify({action: "pages", content: rows}))
+            })
+            db.close();
+        }
+        else if (d.action == "get2") {
+            let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
+                if (err) {
+                  console.error(err.message, d);
+                }
+            });
+            db.all(d.sql, (err,rows) => {
+                ws.send(JSON.stringify({action: "rows", content: rows}))
+            })
             db.close();
         }
         else if (d.action == "put") {
