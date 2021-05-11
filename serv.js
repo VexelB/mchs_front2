@@ -47,9 +47,10 @@ wss.on('connection', (ws, req) => {
                 })
             }
             else {
+                console.log(d.sql)
                 db.serialize(() => {
-                    let sql = `select * from ${d.table} limit ${(d.page-1)*50}, 50`
-                    db.all(sql, (err,rows) => {
+                    db.all(d.sql, (err,rows) => {
+                        console.log()
                         ws.send(JSON.stringify({action: "rows", content: rows}))
                     })
                 })

@@ -160,34 +160,29 @@ class App extends React.Component {
     reqbody.action = "get";
     reqbody.table = x;
     reqbody.page = i;
-    let rownames = datas.map((a)=>{return a.rowname})
     let jointables = []
-    setTimeout(()=>{
-      if (reqbody.table === this.state.table && reqbody.page !== 0) {
-        reqbody.sql = `select ${this.state.headers.map((a)=>{
-          if (rownames.includes(a)) {
-            for (let i in datas) {
-              if (datas[i].rowname === a) {
-                jointables.push(datas[i].tablename)
-                return `${datas[i].tablename.split('.')[0]}.${datas[i].tablerowname}`
-              }
-            }
-          }
-          return `${reqbody.table}.${a}`
-        })} from ${reqbody.table}`
-        for (let i in jointables) {
-          for (let j in datas) {
-            if (jointables[i] === datas[j].tablename) {
-              reqbody.sql += ` INNER JOIN ${jointables[i].split('.')[0]} on ${datas[j].rowname} = ${jointables[i]}`
+    if (reqbody.table === this.state.table && reqbody.page !== 0) {
+      reqbody.sql = `select ${this.state.headers.map((a)=>{
+        if (datas.map((a)=>{return a.rowname}).includes(a)) {
+          for (let i in datas) {
+            if (datas[i].rowname === a) {
+              jointables.push(datas[i].tablename)
+              return `${datas[i].tablename.split('.')[0]}.${datas[i].tablerowname}`
             }
           }
         }
-        console.log(reqbody.sql, datas)
-      } else {
-        ws.send(JSON.stringify(reqbody));
+        return `${reqbody.table}.${a}`
+      })} from ${reqbody.table}`
+      for (let i in jointables) {
+        for (let j in datas) {
+          if (jointables[i] === datas[j].tablename) {
+            reqbody.sql += ` INNER JOIN ${jointables[i].split('.')[0]} on ${datas[j].rowname} = ${jointables[i]}`
+          }
+        }
       }
-      reqbody = {};
-    }, 10)
+    } 
+    ws.send(JSON.stringify(reqbody));
+    reqbody = {};
   }
   
   vac = () => {
@@ -203,9 +198,10 @@ class App extends React.Component {
 
   tableClicked = (event) => {
     this.setState({table: event.target.id, page: 1})
-    this.get(event.target.id, 0)
-    setTimeout(()=>{this.get(event.target.id, 1)}, 100)
-    
+    setTimeout(()=>{
+      this.get(event.target.id, 0)
+      this.get(event.target.id, 1)
+    },10)
   }
 
   valueChange = (event) => {
@@ -235,7 +231,7 @@ class App extends React.Component {
     if (event.target.id === "del") {
       ws.send(JSON.stringify({action: "delete", table: this.state.table, id: this.vac()[0]}))
     }
-    setTimeout(()=>{this.get(this.state.table, this.state.page); this.get(this.state.table, 0)}, 500) 
+    setTimeout(()=>{this.get(this.state.table, this.state.page); this.get(this.state.table, 0)}, 10) 
   }
 
   pageClick = (event) => {
@@ -287,22 +283,22 @@ class App extends React.Component {
         })
       }
       else if (data.action === "pages") {
-        this.setState({pages: [], headers: []})
+        this.setState({pages: []})
         for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
           this.setState({pages: [...this.state.pages, i]})
         }
+      }
+      else if (data.action === "rows") {
+        this.setState({headers: [], rows: []})
         for (let i in data.content[0]) {
           this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
         }
-      }
-      else if (data.action === "rows") {
-        this.setState({rows: []})
         for (let i in data.content) {
           this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
         }
         for (let i in this.state.headers) {
           let items = []
-          items.push(document.querySelector(`#${this.state.headers[i]}`))
+          items.push(document.querySelector(`.table #${this.state.headers[i]}`))
           for (let j in this.state.rows) {
             items.push(document.querySelector(`#row${j}${this.state.headers[i]}`))
           }
