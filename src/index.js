@@ -195,7 +195,6 @@ class App extends React.Component {
       if (all[i].value !== undefined){
         if (datas.map((a)=>{return a.rowname}).includes(all[i].id)) {
           result.push(all[i].value === "" ? "-": this.state.ids[all[i].id][all[i].value])
-          console.log()
         }
         else {
           result.push(all[i].value === "" ? "-": all[i].value)
@@ -273,7 +272,6 @@ class App extends React.Component {
       }
       else if (data.action === "options"){
         let temp = this.state.options
-        console.log(data.content)
         data.content.forEach((a) => {
           if (a.id) {
             let temp = this.state.ids
@@ -290,7 +288,6 @@ class App extends React.Component {
           }
           temp[a.name] = [...temp[a.name], a.value]
         })
-        console.log(this.state.ids)
         this.setState({options: temp})
       }
       else if (data.action === "tables"){
