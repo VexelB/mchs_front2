@@ -1,5 +1,6 @@
 #header {
   text-align: center;
+  background-color: aliceblue;
 }
 .tablehead {
   background-color: #888;
@@ -67,7 +68,7 @@ a {
   -moz-transition: 0.5s ease-in-out;
   -o-transition: 0.5s ease-in-out;
   transition: 0.5s ease-in-out;
-  background-color: white;
+  background-color: aliceblue;
 }
 #menu .submenu {
   display: none;

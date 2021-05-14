@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
-const ws = new WebSocket("ws://192.168.0.132:5353");
+const ws = new WebSocket("ws://localhost:5353");
 let assoc = {};
 let datas = [];
 
@@ -46,6 +46,9 @@ class Header extends React.Component {
         <div id="menu">
           <div id = "tables" className = "btns">Таблицы
               {this.renderMenu()}
+          </div>
+          <div id = "tables" className = "btns">Отчеты
+              
           </div>
         </div>
     </div>
@@ -106,15 +109,15 @@ class Editor extends React.Component {
     for (let i in this.props.headers) {
       let v = this.props.headers[i]
       if (Object.keys(this.props.options).includes(v)) {
-        output.push(<div key={v}>{assoc[v]} <input className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={"input"+v} />
+        output.push(<div key={v}>{assoc[v]} <input className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v} />
         <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i}>{i}</option>)}</datalist>
         </div>)
       }
       else if (v.includes('date')){
-        output.push(<div key={v}>{assoc[v]} <input className="input" type="date" placeholder={assoc[v]} defaultValue={this.props.data[i]}/></div>)
+        output.push(<div key={v}>{assoc[v]} <input className="input" id={v} type="date" placeholder='ГГГГ-ММ-ДД' defaultValue={this.props.data[i]}/></div>)
       }
       else {
-        output.push(<div key={v}>{assoc[v]} <input className="input" id={"input"+v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
+        output.push(<div key={v}>{assoc[v]} <input className="input" id={v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
       }
     }
     return output
@@ -189,7 +192,12 @@ class App extends React.Component {
     let all = document.querySelectorAll(`#data .input`)
     for (let i in all){
       if (all[i].value !== undefined){
-        result.push(all[i].value === "" ? "-": all[i].value)
+        if (datas.map((a)=>{return a.rowname}).includes(all[i].id)) {
+          result.push(all[i].value === "" ? "-": this.state.options[all[i].id].indexOf(all[i].value) + 1)
+        }
+        else {
+          result.push(all[i].value === "" ? "-": all[i].value)
+        }
       }
     }
     return result
@@ -208,29 +216,41 @@ class App extends React.Component {
   }
 
   editing = (event) => {
+    if (this.state.editing === false){
+      for (let i in datas){
+        if (this.state.headers.includes(datas[i].rowname)){
+          ws.send(JSON.stringify({action: "getopt", table: this.state.table, sql: `SELECT '${datas[i].rowname}' as name, ${datas[i].tablerowname} as value from ${datas[i].tablename.split('.')[0]}`}))
+        }
+      }
+    }
     if (event.target.id === 'close'){
       this.setState({editing: !this.state.editing, data: [], oldid: ""})
       return
     }
-    if (event.target.id === "addclose") {
-      if (this.vac()[0] === '-') {
+    else if (event.target.id === "addclose"){
+      if (this.vac()[0] === '-'){
         this.setState({editing: !this.state.editing, data: [], oldid: ""})
         return
       }
-      else if (this.state.oldid === "") {
+      else if (this.state.oldid === ""){
         ws.send(JSON.stringify({"action": "put", "table": this.state.table, "values": this.vac()}));
       } else {
         ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": this.vac(), "headers": this.state.headers}))
       }
+      this.setState({editing: !this.state.editing})
+      setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
     }
-    this.setState({editing: !this.state.editing, data: [], oldid: ""})
-    if (event.target.className === "rowEl") {
-      this.setState({data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
+    else if (event.target.className === "rowEl"){
+      this.setState({editing: !this.state.editing, data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
     }
-    if (event.target.id === "del") {
+    else if (event.target.id === "del"){
       ws.send(JSON.stringify({action: "delete", table: this.state.table, id: this.vac()[0]}))
+      setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+      this.setState({editing: !this.state.editing})
     }
-    setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+    else {
+      this.setState({editing: !this.state.editing, data: [], oldid: ""})
+    }
   }
 
   pageClick = (event) => {

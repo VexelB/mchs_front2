@@ -44,6 +44,17 @@ wss.on('connection', (ws, req) => {
             })
             db.close();
         }
+        else if (d.action == "getopt") {
+            let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
+                if (err) {
+                  console.error(err.message, d);
+                }
+            });
+            db.all(d.sql, (err,rows) => {
+                ws.send(JSON.stringify({action: "options", content: rows}))
+            })
+            db.close();
+        }
         else if (d.action == "get2") {
             let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
                 if (err) {
