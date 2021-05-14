@@ -128,7 +128,7 @@ class Editor extends React.Component {
           <div className = "modal-content" key="modal-content">
             <div>
               <button id="addclose" key="addclose" onClick = {this.props.editing}>Сохранить</button>
-              <button id="del" key="del" onClick = {this.props.editing}>Удалить</button>
+              <button id="del" key="del" onClick = {this.props.editing} style = {{color: "red"}}>Удалить</button>
               <button id="close" key="close" onClick = {this.props.editing}>Закрыть</button><br />
               <div id="data" key="data">
                 {this.renderInputs()}
@@ -154,6 +154,7 @@ class App extends React.Component {
       data: [],
       options: {},
       oldid: "",
+      ids: {},
       editing: false
     }
   }
@@ -193,7 +194,8 @@ class App extends React.Component {
     for (let i in all){
       if (all[i].value !== undefined){
         if (datas.map((a)=>{return a.rowname}).includes(all[i].id)) {
-          result.push(all[i].value === "" ? "-": this.state.options[all[i].id].indexOf(all[i].value) + 1)
+          result.push(all[i].value === "" ? "-": this.state.ids[all[i].id][all[i].value])
+          console.log()
         }
         else {
           result.push(all[i].value === "" ? "-": all[i].value)
@@ -219,7 +221,7 @@ class App extends React.Component {
     if (this.state.editing === false){
       for (let i in datas){
         if (this.state.headers.includes(datas[i].rowname)){
-          ws.send(JSON.stringify({action: "getopt", table: this.state.table, sql: `SELECT '${datas[i].rowname}' as name, ${datas[i].tablerowname} as value from ${datas[i].tablename.split('.')[0]}`}))
+          ws.send(JSON.stringify({action: "getopt", table: this.state.table, sql: `SELECT id, '${datas[i].rowname}' as name, ${datas[i].tablerowname} as value from ${datas[i].tablename.split('.')[0]}`}))
         }
       }
     }
@@ -271,23 +273,35 @@ class App extends React.Component {
       }
       else if (data.action === "options"){
         let temp = this.state.options
+        console.log(data.content)
         data.content.forEach((a) => {
+          if (a.id) {
+            let temp = this.state.ids
+            temp[a.name] = {}
+            this.setState({ids: temp})
+          } 
           temp[a.name] = []
         })
         data.content.forEach((a) => {
+          if (a.id) {
+            let temp = this.state.ids
+            temp[a.name][a.value] = a.id
+            this.setState({ids: temp})
+          }
           temp[a.name] = [...temp[a.name], a.value]
         })
+        console.log(this.state.ids)
         this.setState({options: temp})
       }
       else if (data.action === "tables"){
         let temp = this.state.options
         data.content.forEach((a) => {
-          temp["table"] = []
+          temp["tables"] = []
         })
         data.content.forEach((a) => {
           if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
             this.setState({tables: [...this.state.tables, a.name]})
-            temp["table"] = [...temp["table"], assoc[a.name]]
+            temp["tables"] = [...temp["tables"], assoc[a.name]]
           }
         })
         this.setState({options: temp})
