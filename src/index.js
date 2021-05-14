@@ -155,6 +155,7 @@ class App extends React.Component {
       options: {},
       oldid: "",
       ids: {},
+      pass: {},
       editing: false
     }
   }
@@ -195,6 +196,9 @@ class App extends React.Component {
       if (all[i].value !== undefined){
         if (datas.map((a)=>{return a.rowname}).includes(all[i].id)) {
           result.push(all[i].value === "" ? "-": this.state.ids[all[i].id][all[i].value])
+        }
+        else if (all[i].id === "password"){
+          result.push(all[i].value === "*****" ? this.state.pass[result[0]] : all[i].value)
         }
         else {
           result.push(all[i].value === "" ? "-": all[i].value)
@@ -326,7 +330,24 @@ class App extends React.Component {
       else if (data.action === "rows") {
         this.setState({})
         for (let i in data.content) {
-          this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
+          let temp = []
+          if (this.state.headers.includes("password")){
+            let temp1 = this.state.pass
+            temp1[data.content[i].id] = data.content[i].password
+            this.setState({pass: temp1})
+            temp.push(Object.values(data.content[i]).map((a)=>{
+              if (Object.keys(data.content[i]).find(key => data.content[i][key] === a) === "password"){
+                return "*****"
+              }
+              else {
+                return a
+              }
+            }))
+            this.setState({rows:  temp})
+          }
+          else {
+            this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
+          }
         }
         for (let i in this.state.headers) {
           let items = []
