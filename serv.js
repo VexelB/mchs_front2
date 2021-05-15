@@ -75,17 +75,23 @@ wss.on('connection', (ws, req) => {
             let sql = `INSERT INTO ${d.table} VALUES (`
             d.values.map((a)=>{sql += `'${a}',`})
             sql = sql.slice(0,sql.length-1) + ');'
-            db.run(sql);
+            db.run(sql, (err) => {
+                if (err.errno === 19) {
+                    console.error(err.errno)
+                }
+            });
             db.close();
         }
         else if (d.action == 'delete') {
             let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
                 if (err) {
-                  console.error(err.message);
+                    console.error(err.message);
                 }
             });
-            db.serialize(() => {
-                db.run(`DELETE FROM ${d.table} where id = '${d.id}'`)
+            db.run(d.sql, (err) => {
+                if (err) {
+                    console.error(err.message)
+                }
             })
             db.close();
         }

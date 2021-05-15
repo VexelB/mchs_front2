@@ -194,14 +194,15 @@ class App extends React.Component {
     let all = document.querySelectorAll(`#data .input`)
     for (let i in all){
       if (all[i].value !== undefined){
+        let val = all[i].value.trim()
         if (datas.map((a)=>{return a.rowname}).includes(all[i].id)) {
-          result.push(all[i].value === "" ? "-": this.state.ids[all[i].id][all[i].value])
+          result.push(val === "" ? "-": this.state.ids[all[i].id][val])
         }
         else if (all[i].id === "password"){
-          result.push(all[i].value === "*****" ? this.state.pass[result[0]] : all[i].value)
+          result.push(val === "*****" ? this.state.pass[result[0]] : val)
         }
         else {
-          result.push(all[i].value === "" ? "-": all[i].value)
+          result.push(val === "" ? "-": val)
         }
       }
     }
@@ -249,8 +250,14 @@ class App extends React.Component {
       this.setState({editing: !this.state.editing, data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
     }
     else if (event.target.id === "del"){
-      ws.send(JSON.stringify({action: "delete", table: this.state.table, id: this.vac()[0]}))
-      setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+      if (this.vac()[0] !== "-"){
+        let reqbody = {}
+        reqbody.action = "delete"
+        reqbody.sql = `DELETE FROM ${this.state.table} where ${this.state.headers[0]} = '${this.vac()[0]}'`
+        ws.send(JSON.stringify(reqbody))
+        setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+        console.log(this.vac()[0])
+      }
       this.setState({editing: !this.state.editing})
     }
     else {
@@ -300,10 +307,10 @@ class App extends React.Component {
           temp["tables"] = []
         })
         data.content.forEach((a) => {
-          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
+          // if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
             this.setState({tables: [...this.state.tables, a.name]})
             temp["tables"] = [...temp["tables"], assoc[a.name]]
-          }
+          // }
         })
         this.setState({options: temp})
       }
