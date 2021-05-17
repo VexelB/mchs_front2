@@ -69,7 +69,7 @@ class MainData extends React.Component {
   }
   render(){
     return(
-      <div id = "maindata" key = "maindata" style={{height: "93vh", overflow: "auto"}}>
+      <div id = "maindata" key = "maindata" style={{height: "92vh", overflow: "auto"}}>
         {this.renderShap()}
         <div className = "data" id = {this.props.table} key = {this.props.table}>
           <div className = "table">
@@ -89,7 +89,7 @@ class MainData extends React.Component {
 class Pages extends React.Component {
   render() {
     return(
-      <div id = "pages" style={{height: "4vh", overflow: "auto"}}>
+      <div id = "pages" style={{height: "5vh", overflow: "auto"}}>
         <div className = "pages" id={this.props.table}>
           {this.props.pages.map((i) => <div 
             onClick={this.props.pageClick}
