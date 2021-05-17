@@ -73,7 +73,7 @@ a {
 #menu .submenu {
   display: none;
 }
-#menu #tables:hover .submenu {
+#menu .btns:hover .submenu {
   display: block;
 }
 #menu ul li:hover .submenu {
@@ -87,7 +87,7 @@ a {
 }
 #pages .page{
   display: inline-block;
-  padding: 10px;
+  padding: 5px;
   border: 1px solid;
 }
 #pages .page:hover{

@@ -19,7 +19,7 @@ wss.on('connection', (ws, req) => {
         db.all(`select * from options`, (err, rows) => {
             ws.send(JSON.stringify({action: "options", content: rows}))
         })
-        db.all(`SELECT name FROM sqlite_master WHERE type='table';`, (err,rows) => {
+        db.all(`SELECT name FROM sqlite_master WHERE type='table' ORDER by name`, (err,rows) => {
             ws.send(JSON.stringify({action: "tables", content: rows}))
         })
     })
@@ -76,8 +76,10 @@ wss.on('connection', (ws, req) => {
             d.values.map((a)=>{sql += `'${a}',`})
             sql = sql.slice(0,sql.length-1) + ');'
             db.run(sql, (err) => {
-                if (err.errno === 19) {
-                    console.error(err.errno)
+                if (err) {
+                    if (err.errno === 19){
+                        console.error(err.errno)
+                    }
                 }
             });
             db.close();

@@ -33,10 +33,10 @@ class Menu extends React.Component {
 
 class Header extends React.Component {
 
-  renderMenu(){
+  renderMenu(a){
     return <Menu 
       tableClicked = {this.props.tableClicked}
-      tables = {this.props.tables}
+      tables = {a}
     />;
   }
 
@@ -45,10 +45,13 @@ class Header extends React.Component {
       <div id = "header">
         <div id="menu">
           <div id = "tables" className = "btns">Таблицы
-              {this.renderMenu()}
+              {this.renderMenu(this.props.tables)}
           </div>
-          <div id = "tables" className = "btns">Отчеты
+          <div id = "reports" className = "btns">Отчеты
               
+          </div>
+          <div id = "options" className = "btns">Настройки
+              {this.renderMenu(this.props.otables)}
           </div>
         </div>
     </div>
@@ -110,7 +113,7 @@ class Editor extends React.Component {
       let v = this.props.headers[i]
       if (Object.keys(this.props.options).includes(v)) {
         output.push(<div key={v}>{assoc[v]} <input className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v} />
-        <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i}>{i}</option>)}</datalist>
+        <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i[0]}>{i[0]}</option>)}</datalist>
         </div>)
       }
       else if (v.includes('date')){
@@ -156,6 +159,8 @@ class App extends React.Component {
       oldid: "",
       ids: {},
       pass: {},
+      sugid: 1,
+      otables: [],
       editing: false
     }
   }
@@ -171,7 +176,7 @@ class App extends React.Component {
           for (let i in datas) {
             if (datas[i].rowname === a) {
               jointables.push(datas[i].tablename)
-              return `${datas[i].tablename.split('.')[0]}.${datas[i].tablerowname}`
+              return `${datas[i].tablename.split('.')[0]}.${datas[i].tablerowname} as ${a}`
             }
           }
         }
@@ -184,7 +189,7 @@ class App extends React.Component {
           }
         }
       }
-    } 
+    }
     ws.send(JSON.stringify(reqbody));
     reqbody = {};
   }
@@ -256,7 +261,6 @@ class App extends React.Component {
         reqbody.sql = `DELETE FROM ${this.state.table} where ${this.state.headers[0]} = '${this.vac()[0]}'`
         ws.send(JSON.stringify(reqbody))
         setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
-        console.log(this.vac()[0])
       }
       this.setState({editing: !this.state.editing})
     }
@@ -297,7 +301,7 @@ class App extends React.Component {
             temp[a.name][a.value] = a.id
             this.setState({ids: temp})
           }
-          temp[a.name] = [...temp[a.name], a.value]
+          temp[a.name] = [...temp[a.name], [a.value, a.comment]]
         })
         this.setState({options: temp})
       }
@@ -307,10 +311,13 @@ class App extends React.Component {
           temp["tables"] = []
         })
         data.content.forEach((a) => {
-          // if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
+          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
             this.setState({tables: [...this.state.tables, a.name]})
-            temp["tables"] = [...temp["tables"], assoc[a.name]]
-          // }
+            temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+          } else {
+            this.setState({otables: [...this.state.otables, a.name]})
+            // temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+          }
         })
         this.setState({options: temp})
       }
@@ -335,7 +342,6 @@ class App extends React.Component {
         
       }
       else if (data.action === "rows") {
-        this.setState({})
         for (let i in data.content) {
           let temp = []
           if (this.state.headers.includes("password")){
@@ -376,6 +382,7 @@ class App extends React.Component {
     return <Header 
       tableClicked = {this.tableClicked}
       tables = {this.state.tables}
+      otables = {this.state.otables}
     />;
   }
   renderMainData() {
