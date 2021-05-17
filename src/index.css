@@ -29,7 +29,7 @@ nav {
   width: 660px;
   margin: 0 auto 30px;
 }
-#tables {
+.btns {
   width: 10%;
 }
 ul {
@@ -69,6 +69,10 @@ a {
   -o-transition: 0.5s ease-in-out;
   transition: 0.5s ease-in-out;
   background-color: aliceblue;
+}
+.submenu li {
+  border: solid 1px black; 
+  /* border-bottom: 1px; */
 }
 #menu .submenu {
   display: none;

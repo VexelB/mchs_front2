@@ -324,7 +324,7 @@ class App extends React.Component {
           temp["tables"] = []
         })
         data.content.forEach((a) => {
-          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options'){
+          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options' && a.name !== 'access'){
             this.setState({tables: [...this.state.tables, a.name]})
             temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
           } else {
