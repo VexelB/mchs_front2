@@ -1,7 +1,72 @@
 const fs = require('fs');
-const sqlite3 = require("sqlite3")
 const WebSocket = require( "ws");
-const wss = new WebSocket.Server({port: 5353});
+const express = require("express");
+const app = new express();
+const https = require('https')
+const http = express();
+const path = require("path")
+const sqlite3 = require("sqlite3")
+const server = https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+}, app)
+const wss = new WebSocket.Server({ server });
+let clients = []
+
+let passcheck = (row, req, res) => {
+    if (row.password === req.body.pass) {
+        clients.push(req.connection.remoteAddress);
+        res.sendFile(path.join(__dirname,'build/loged.html'))
+        setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 1000)
+    } else {
+        res.sendFile(path.join(__dirname, 'build/index.html'));
+    }
+}
+app.use('/', express.static(__dirname + "/build"))
+app.use(express.urlencoded());
+
+app.post('/*', (req, res) => {
+    let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
+        if (err) {
+          console.error(err.message);
+        }
+    });
+    db.each(`SELECT * from users where username = '${req.body.login}'`, (err, row)=>{
+        // console.log(row)
+        passcheck(row, req, res)
+    })
+    db.close();
+    // if (req.body.pass == password) {
+    //     clients.push(req.connection.remoteAddress);
+    //     res.sendFile(path.join(__dirname, 'index.html'))
+    //     setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 1000)
+    // }
+    // else {
+    //     res.sendFile(path.join(__dirname, 'login.html'));
+    // }
+})
+// app.get('/*', (req, res) => {
+//     if (clients.includes(req.ip)) {
+//         res.sendFile(path.join(__dirname, 'loged.html'))
+//     }
+//     else {
+//         res.sendFile(path.join(__dirname, 'index.html'));
+//     }
+// })
+// app.get('/*.*', (req, res) => {
+//     if (clients.includes(req.ip)) {
+//         res.sendFile(path.join(__dirname, req.path))
+//     }
+// })
+
+server.listen(5353, function () {
+    console.log('Example app listening on port 3000!')
+})
+http.get('*', (req,res) => {
+    res.redirect('https://' + req.headers.host + req.url);
+})
+.listen(8080);
+
 
 wss.on('connection', (ws, req) => {
     let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
@@ -79,7 +144,12 @@ wss.on('connection', (ws, req) => {
                         d.values.shift()
                         d.values.map((a)=>{sql += `'${a}',`})
                         sql = sql.slice(0,sql.length-1) + ');'
-                        db.run(sql)
+                        db.run(sql, (err) => {
+                            if (err) {
+                                ws.send(JSON.stringify({action: "message", content: "Был введен неуникальный ID, однако автоматически его поправить не удалось, что-то пошло не так."}))
+                                return
+                            }
+                        })
                         ws.send(JSON.stringify({action: "message", content: "Был введен неуникальный ID, ID заменен автоматически."}))
                     }
                 }

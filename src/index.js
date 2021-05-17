@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 
-const ws = new WebSocket("ws://localhost:5353");
+const ws = new WebSocket("wss://localhost:5353");
 let assoc = {};
 let datas = [];
 
@@ -442,6 +442,7 @@ class App extends React.Component {
 }
 
 ReactDOM.render(
+  
   <App />,
   document.getElementById('root')
 );
