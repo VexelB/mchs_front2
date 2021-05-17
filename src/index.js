@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals';
 const ws = new WebSocket("wss://localhost:5353");
 let assoc = {};
 let datas = [];
+let ignore = ['Attvalid', 'Result', 'rtp'];
 
 class MenuItem extends React.Component {
   render() {
@@ -326,12 +327,14 @@ class App extends React.Component {
           temp["tables"] = []
         })
         data.content.forEach((a) => {
-          if (a.name === 'apparat' || a.name === "balloon" || a.name === "passedapprovals" || a.name === "people" || a.name === "section"){
-            this.setState({tables: [...this.state.tables, a.name]})
-            temp["tables"] = [...temp["tables"], assoc[a.name]]
-          } else {
-            this.setState({otables: [...this.state.otables, a.name]})
-            // temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+          if (!ignore.includes(a.name)){
+            if (a.name === 'apparat' || a.name === "balloon" || a.name === "passedapprovals" || a.name === "people" || a.name === "section"){
+              this.setState({tables: [...this.state.tables, a.name]})
+              temp["tables"] = [...temp["tables"], assoc[a.name]]
+            } else {
+              this.setState({otables: [...this.state.otables, a.name]})
+              // temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+            }
           }
         })
         this.setState({options: temp})
