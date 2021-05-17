@@ -9,14 +9,12 @@ let datas = [];
 
 class MenuItem extends React.Component {
   render() {
-    return <li className="tables">
-      <div 
-        className="btns" 
+    return <li
+        className="tables" 
         onClick={this.props.tableClicked}
         id={this.props.value[0]}
       >
         {this.props.value[1]}
-      </div>
     </li>
   }
 }
@@ -91,7 +89,7 @@ class MainData extends React.Component {
 class Pages extends React.Component {
   render() {
     return(
-      <div id = "pages" style={{height: "5vh", overflow: "auto"}}>
+      <div id = "pages" style={{height: "4vh", overflow: "auto"}}>
         <div className = "pages" id={this.props.table}>
           {this.props.pages.map((i) => <div 
             onClick={this.props.pageClick}
@@ -196,7 +194,8 @@ class App extends React.Component {
         }
       }
     }
-    reqbody.sql += ` order by ${this.state.table}.${this.state.headers[0]}`
+    reqbody.sql += ` order by ${this.state.table}.${this.state.headers[0]} LIMIT ${50 * (this.state.page - 1)}, 50`
+    console.log(reqbody.sql)
     ws.send(JSON.stringify(reqbody));
     reqbody = {};
   }
