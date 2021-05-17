@@ -115,7 +115,7 @@ class Editor extends React.Component {
         // </div>)
         let opt = []
         output.push(<div key={v}>{assoc[v]} <select className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v}>
-        {this.props.options[v].forEach((i) => {if (this.props.options[v][i] === this.props.data[i]) {opt.push(<option key={i[0]} selected="selected">{i[0]}</option>)} else {opt.push(<option key={i[0]}>{i[0]}</option>)} })}
+        {this.props.options[v].forEach((i) => {if ([i][0] === this.props.data[i]) {opt.push(<option key={i[0]} selected="selected">{i[0]}</option>)} else {opt.push(<option key={i[0]}>{i[0]}</option>)} })}
         {opt}
         </select>
         </div>)
@@ -323,7 +323,7 @@ class App extends React.Component {
           temp["tables"] = []
         })
         data.content.forEach((a) => {
-          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options' && a.name !== 'access'){
+          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options' && a.name !== 'access' && a.name !== 'users'){
             this.setState({tables: [...this.state.tables, a.name]})
             temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
           } else {
