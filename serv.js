@@ -78,10 +78,16 @@ wss.on('connection', (ws, req) => {
             db.run(sql, (err) => {
                 if (err) {
                     if (err.errno === 19){
-                        console.error(err.errno)
+                        let sql = `INSERT INTO ${d.table} VALUES ((select count(*) from ${d.table}) + 1,`
+                        d.values.shift()
+                        d.values.map((a)=>{sql += `'${a}',`})
+                        sql = sql.slice(0,sql.length-1) + ');'
+                        db.run(sql)
+                        ws.send(JSON.stringify({action: "message", content: "Был введен неуникальный ID, ID заменен автоматически."}))
                     }
                 }
             });
+            ws.send(JSON.stringify({action: "success"}))
             db.close();
         }
         else if (d.action == 'delete') {
@@ -95,6 +101,7 @@ wss.on('connection', (ws, req) => {
                     console.error(err.message)
                 }
             })
+            ws.send(JSON.stringify({action: "success"}))
             db.close();
         }
         else if (d.action == 'change') {
@@ -111,6 +118,7 @@ wss.on('connection', (ws, req) => {
                 sql = sql.slice(0, sql.length-1) + ` where ${d.headers[0]} = '${d.oldid}'`
                 db.run(sql)
             })
+            ws.send(JSON.stringify({action: "success"}))
             db.close();
         }
         else if (d.action == 'search') {

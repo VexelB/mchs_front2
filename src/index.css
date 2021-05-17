@@ -79,15 +79,12 @@ a {
 #menu ul li:hover .submenu {
   display: block;
 }
-#menu #reports:hover .submenu {
-  display: block;
-}
 .btns:hover{
   cursor: pointer;
 }
 #pages .page{
   display: inline-block;
-  padding: 5px;
+  padding: 7px;
   border: 1px solid;
 }
 #pages .page:hover{

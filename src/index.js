@@ -190,6 +190,7 @@ class App extends React.Component {
         }
       }
     }
+    reqbody.sql += ` order by ${this.state.table}.${this.state.headers[0]}`
     ws.send(JSON.stringify(reqbody));
     reqbody = {};
   }
@@ -248,7 +249,7 @@ class App extends React.Component {
       } else {
         ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": this.vac(), "headers": this.state.headers}))
       }
-      this.setState({editing: !this.state.editing})
+      // this.setState({editing: !this.state.editing})
       setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
     }
     else if (event.target.className === "rowEl"){
@@ -262,7 +263,7 @@ class App extends React.Component {
         ws.send(JSON.stringify(reqbody))
         setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
       }
-      this.setState({editing: !this.state.editing})
+      // this.setState({editing: !this.state.editing})
     }
     else {
       this.setState({editing: !this.state.editing, data: [], oldid: ""})
@@ -284,6 +285,12 @@ class App extends React.Component {
         for (let i in data.content) {
           assoc[data.content[i].name] = data.content[i].value
         }
+      }
+      else if (data.action === "message") {
+        alert(data.content)
+      }
+      else if (data.action === "success") {
+        this.setState({editing: !this.state.editing, data: [], oldid: ""})
       }
       else if (data.action === "options"){
         let temp = this.state.options
