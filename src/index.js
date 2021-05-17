@@ -71,7 +71,7 @@ class MainData extends React.Component {
   }
   render(){
     return(
-      <div id = "maindata" key = "maindata" style={{height: "90vh", overflow: "auto"}}>
+      <div id = "maindata" key = "maindata" style={{height: "93vh", overflow: "auto"}}>
         {this.renderShap()}
         <div className = "data" id = {this.props.table} key = {this.props.table}>
           <div className = "table">
