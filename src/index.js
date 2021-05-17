@@ -112,8 +112,14 @@ class Editor extends React.Component {
     for (let i in this.props.headers) {
       let v = this.props.headers[i]
       if (Object.keys(this.props.options).includes(v)) {
-        output.push(<div key={v}>{assoc[v]} <input className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v} />
-        <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i[0]}>{i[0]}</option>)}</datalist>
+        // output.push(<div key={v}>{assoc[v]} <input className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v} />
+        // <datalist id={"options"+v}>{this.props.options[v].map((i) => <option key={i[0]}>{i[0]}</option>)}</datalist>
+        // </div>)
+        let opt = []
+        output.push(<div key={v}>{assoc[v]} <select className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v}>
+        {this.props.options[v].forEach((i) => {if (this.props.options[v][i] === this.props.data[i]) {opt.push(<option key={i[0]} selected="selected">{i[0]}</option>)} else {opt.push(<option key={i[0]}>{i[0]}</option>)} })}
+        {opt}
+        </select>
         </div>)
       }
       else if (v.includes('date')){
