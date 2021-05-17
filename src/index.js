@@ -115,7 +115,9 @@ class Editor extends React.Component {
         // </div>)
         let opt = []
         output.push(<div key={v}>{assoc[v]} <select className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v}>
-        {this.props.options[v].forEach((i) => {if ([i][0] === this.props.data[i]) {opt.push(<option key={i[0]} selected="selected">{i[0]}</option>)} else {opt.push(<option key={i[0]}>{i[0]}</option>)} })}
+        {this.props.options[v].forEach((q) => {
+          if (q[0] === this.props.data[i]) {opt.push(<option key={q[0]} selected="selected">{q[0]}</option>)} else {opt.push(<option key={q[0]}>{q[0]}</option>)} 
+          })}
         {opt}
         </select>
         </div>)
@@ -163,7 +165,6 @@ class App extends React.Component {
       oldid: "",
       ids: {},
       pass: {},
-      sugid: 1,
       otables: [],
       editing: false
     }
@@ -195,7 +196,6 @@ class App extends React.Component {
       }
     }
     reqbody.sql += ` order by ${this.state.table}.${this.state.headers[0]} LIMIT ${50 * (this.state.page - 1)}, 50`
-    console.log(reqbody.sql)
     ws.send(JSON.stringify(reqbody));
     reqbody = {};
   }
@@ -420,6 +420,7 @@ class App extends React.Component {
         headers = {this.state.headers} 
         data = {this.state.data}
         options = {this.state.options}
+        ids = {this.state.ids}
       />
     }
   }

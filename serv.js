@@ -16,9 +16,6 @@ wss.on('connection', (ws, req) => {
         db.all(`select * from datas`, (err, rows) => {
             ws.send(JSON.stringify({action: "datas", content: rows}))
         })
-        db.all(`select * from options`, (err, rows) => {
-            ws.send(JSON.stringify({action: "options", content: rows}))
-        })
         db.all(`SELECT name FROM sqlite_master WHERE type='table' ORDER by name`, (err,rows) => {
             ws.send(JSON.stringify({action: "tables", content: rows}))
         })
