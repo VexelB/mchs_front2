@@ -116,7 +116,7 @@ class Editor extends React.Component {
         let opt = []
         output.push(<div key={v}>{assoc[v]} <select className="input" defaultValue={this.props.data[i]} placeholder={assoc[v]} list={"options"+v} id={v}>
         {this.props.options[v].forEach((q) => {
-          if (q[0] === this.props.data[i]) {opt.push(<option key={q[0]} selected="selected">{q}</option>)} else {opt.push(<option key={q}>{q}</option>)} 
+          if (q === this.props.data[i]) {opt.push(<option key={q} selected="selected">{q}</option>)} else {opt.push(<option key={q}>{q}</option>)} 
           })}
         {opt}
         </select>
@@ -265,8 +265,11 @@ class App extends React.Component {
         let reqbody = {}
         reqbody.action = "delete"
         reqbody.sql = `DELETE FROM ${this.state.table} where ${this.state.headers[0]} = '${this.vac()[0]}'`
-        ws.send(JSON.stringify(reqbody))
-        setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+        let check = window.confirm("Точно удалить?")
+        if (check) {
+          ws.send(JSON.stringify(reqbody))
+          setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+        }
       }
       // this.setState({editing: !this.state.editing})
     }
@@ -323,7 +326,7 @@ class App extends React.Component {
           temp["tables"] = []
         })
         data.content.forEach((a) => {
-          if (a.name !== 'assoc' && a.name !== 'datas' && a.name !== 'options' && a.name !== 'access' && a.name !== 'users'){
+          if (a.name === 'apparat' || a.name === "balloon" || a.name === "passedapprovals" || a.name === "people" || a.name === "section"){
             this.setState({tables: [...this.state.tables, a.name]})
             temp["tables"] = [...temp["tables"], assoc[a.name]]
           } else {
