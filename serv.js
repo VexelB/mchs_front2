@@ -65,7 +65,7 @@ server.listen(5454, function () {
 http.get('*', (req,res) => {
     res.redirect('https://' + req.headers.host + req.url);
 })
-.listen(8080);
+.listen(8181);
 
 
 wss.on('connection', (ws, req) => {
