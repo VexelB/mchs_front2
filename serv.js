@@ -17,7 +17,7 @@ let passcheck = (row, req, res) => {
     if (row.password === req.body.pass) {
         clients.push(req.connection.remoteAddress);
         res.sendFile(path.join(__dirname,'build/loged.html'))
-        setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 1000)
+        // setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 1000)
     } else {
         res.sendFile(path.join(__dirname, 'build/index.html'));
     }
@@ -67,8 +67,8 @@ http.get('*', (req,res) => {
 })
 .listen(8181);
 
-
 wss.on('connection', (ws, req) => {
+    console.log(req.connection.remoteAddress, clients)
     let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
         if (err) {
           console.error(err.message);
@@ -86,6 +86,10 @@ wss.on('connection', (ws, req) => {
         })
     })
     db.close();
+
+    ws.on('close', () => {
+
+    })
     ws.on('message', (d) => {
         d = JSON.parse(d)
         let d1 = new Date();
