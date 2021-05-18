@@ -11,13 +11,13 @@ const server = https.createServer({
     cert: fs.readFileSync('server.cert')
 }, app)
 const wss = new WebSocket.Server({ server });
-let clients = []
+let clients = {}
 
 let passcheck = (row, req, res) => {
     if (row.password === req.body.pass) {
-        clients.push(req.connection.remoteAddress);
+        clients[req.connection.remoteAddress] = req.body.login
         res.sendFile(path.join(__dirname,'build/loged.html'))
-        setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 600000)
+        // setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 600000)
     } else {
         res.sendFile(path.join(__dirname, 'build/index.html'));
     }
@@ -68,7 +68,7 @@ http.get('*', (req,res) => {
 .listen(8181);
 
 wss.on('connection', (ws, req) => {
-    if (clients.includes(req.connection.remoteAddress)) {
+    if (clients[req.connection.remoteAddress]) {
         let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
             if (err) {
               console.error(err.message);
@@ -81,9 +81,15 @@ wss.on('connection', (ws, req) => {
             db.all(`select * from datas`, (err, rows) => {
                 ws.send(JSON.stringify({action: "datas", content: rows}))
             })
-            db.all(`SELECT name FROM sqlite_master WHERE type='table' ORDER by name`, (err,rows) => {
-                ws.send(JSON.stringify({action: "tables", content: rows}))
-            })
+            if (clients[req.connection.remoteAddress] === "admin") {
+                db.all(`SELECT name FROM sqlite_master WHERE type='table' ORDER by name`, (err,rows) => {
+                    ws.send(JSON.stringify({action: "tables", content: rows}))
+                })
+            } else {
+                db.all(`SELECT assoc.name FROM access inner join assoc on access.tables = assoc.value where access.rank = (SELECT rank FROM users inner join people on users.peopleid = people.id where users.username = '${clients[req.connection.remoteAddress]}') ORDER by name`, (err,rows) => {
+                    ws.send(JSON.stringify({action: "tables", content: rows}))
+                })
+            }
         })
         db.close();
     }
@@ -92,7 +98,8 @@ wss.on('connection', (ws, req) => {
     }
 
     ws.on('close', () => {
-        clients.splice(clients.indexOf(req.connection.remoteAddress, 1))
+        // clients.splice(clients.indexOf(req.connection.remoteAddress, 1))
+        clients[req.connection.remoteAddress] = undefined
     })
     ws.on('message', (d) => {
         d = JSON.parse(d)
