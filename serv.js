@@ -17,7 +17,7 @@ let passcheck = (row, req, res) => {
     if (row.password === req.body.pass) {
         clients.push(req.connection.remoteAddress);
         res.sendFile(path.join(__dirname,'build/loged.html'))
-        // setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 1000)
+        setTimeout(() => {clients.splice(clients.indexOf(req.connection.remoteAddress, 1))}, 600000)
     } else {
         res.sendFile(path.join(__dirname, 'build/index.html'));
     }
@@ -60,7 +60,7 @@ app.post('/*', (req, res) => {
 // })
 
 server.listen(5454, function () {
-    console.log('Example app listening on port 3000!')
+    console.log('Example app listening on port 5454!')
 })
 http.get('*', (req,res) => {
     res.redirect('https://' + req.headers.host + req.url);
@@ -68,27 +68,31 @@ http.get('*', (req,res) => {
 .listen(8181);
 
 wss.on('connection', (ws, req) => {
-    console.log(req.connection.remoteAddress, clients)
-    let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
-        if (err) {
-          console.error(err.message);
-        }
-    });
-    db.serialize(() => {
-        db.all(`select * from assoc`, (err,rows) => {
-            ws.send(JSON.stringify({action: "assoc", content: rows}))
+    if (clients.includes(req.connection.remoteAddress)) {
+        let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
+            if (err) {
+              console.error(err.message);
+            }
+        });
+        db.serialize(() => {
+            db.all(`select * from assoc`, (err,rows) => {
+                ws.send(JSON.stringify({action: "assoc", content: rows}))
+            })
+            db.all(`select * from datas`, (err, rows) => {
+                ws.send(JSON.stringify({action: "datas", content: rows}))
+            })
+            db.all(`SELECT name FROM sqlite_master WHERE type='table' ORDER by name`, (err,rows) => {
+                ws.send(JSON.stringify({action: "tables", content: rows}))
+            })
         })
-        db.all(`select * from datas`, (err, rows) => {
-            ws.send(JSON.stringify({action: "datas", content: rows}))
-        })
-        db.all(`SELECT name FROM sqlite_master WHERE type='table' ORDER by name`, (err,rows) => {
-            ws.send(JSON.stringify({action: "tables", content: rows}))
-        })
-    })
-    db.close();
+        db.close();
+    }
+    else {
+        ws.send(JSON.stringify({action: 'message', content: "Авторизируйтесь через главную страницу"}))
+    }
 
     ws.on('close', () => {
-
+        clients.splice(clients.indexOf(req.connection.remoteAddress, 1))
     })
     ws.on('message', (d) => {
         d = JSON.parse(d)
