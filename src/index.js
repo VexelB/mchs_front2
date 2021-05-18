@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 const ws = new WebSocket("wss://78.140.214.186:5454");
 let assoc = {};
 let datas = [];
-let ignore = ['Attvalid', 'Result', 'rtp'];
+let ignore = ['Attvalid', 'Result', 'rtp', "worklife"];
 
 class MenuItem extends React.Component {
   render() {
