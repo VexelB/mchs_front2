@@ -108,7 +108,7 @@ wss.on('connection', (ws, req) => {
         for (let i in d) {
             log += `${i}:${d[i]} `
         }
-        log += '\n'
+        log += ` ${clients[req.connection.remoteAddress]}\n`
         fs.appendFileSync('log.txt', log)
         if (d.action == "get") {
             let db = new sqlite3.Database('sqlite.db', sqlite3.OPEN_READWRITE, (err) => {
