@@ -8,23 +8,17 @@ let assoc = {};
 let datas = [];
 let ignore = ['Attvalid', 'Result', 'rtp', "worklife"];
 
-class MenuItem extends React.Component {
-  render() {
-    return <li
-        className="tables" 
-        onClick={this.props.tableClicked}
-        id={this.props.value[0]}
-      >
-        {this.props.value[1]}
-    </li>
-  }
-}
-
 class Menu extends React.Component {
   render() {
     return (
       <ul className="submenu">
-        {this.props.tables.map((a) => (<MenuItem key={a} value={[a, assoc[a]]} tableClicked={this.props.tableClicked}></MenuItem>))}
+        {this.props.tables.map((a) => (<li
+          className="tables" 
+          onClick={this.props.tableClicked}
+          id={a}
+        >
+          {assoc[a]}
+        </li>))}
       </ul>
     );
   }
@@ -32,26 +26,25 @@ class Menu extends React.Component {
 
 class Header extends React.Component {
 
-  renderMenu(a){
-    return <Menu 
-      tableClicked = {this.props.tableClicked}
-      tables = {a}
-    />;
-  }
-
   render() {
     return (
       <div id = "header">
         <div id="menu">
           <div id = "tables" className = "btns">Таблицы
-              {this.renderMenu(this.props.tables)}
+              <Menu 
+                tableClicked = {this.props.tableClicked}
+                tables = {this.props.tables}
+              />
           </div>
           <div id = "reports" className = "btns">Отчеты
-              
           </div>
           <div id = "options" className = "btns">Настройки
-              {this.renderMenu(this.props.otables)}
+              <Menu 
+                tableClicked = {this.props.tableClicked}
+                tables = {this.props.otables}
+              />
           </div>
+          <div id = "exit" className = "btns" onClick = {() => {window.location.href = window.location.href}}>Выход</div>
         </div>
     </div>
     );
@@ -155,8 +148,8 @@ class App extends React.Component {
     super(props)
     this.state = {
       tables: [],
-      page: 0,
       table: "",
+      page: 0,
       headers: [],
       headwidth: [],
       rows: [],
@@ -170,7 +163,6 @@ class App extends React.Component {
       editing: false
     }
   }
-
   get = (x) => {
     let reqbody = {};
     reqbody.action = "get2";
@@ -200,7 +192,6 @@ class App extends React.Component {
     ws.send(JSON.stringify(reqbody));
     reqbody = {};
   }
-  
   vac = () => {
     let result = []
     let all = document.querySelectorAll(`#data .input`)
@@ -220,7 +211,6 @@ class App extends React.Component {
     }
     return result
   }
-
   tableClicked = (event) => {
     this.setState({table: event.target.id, page: 1})
     setTimeout(()=>{
@@ -228,11 +218,9 @@ class App extends React.Component {
     },10)
     ws.send(JSON.stringify({action: "get", table: event.target.id}))
   }
-
   valueChange = (event) => {
     this.setState({data: event.target.value})
   }
-
   editing = (event) => {
     if (this.state.editing === false){
       for (let i in datas){
@@ -278,12 +266,10 @@ class App extends React.Component {
       this.setState({editing: !this.state.editing, data: [], oldid: ""})
     }
   }
-
   pageClick = (event) => {
     this.setState({page: event.target.id})
     ws.send(JSON.stringify({action: "get", table: this.state.table}))
   }
-
   componentDidMount() {
     ws.onclose = () => {
       alert('Соединение с сервером потеряно!');
@@ -396,29 +382,6 @@ class App extends React.Component {
       
     }
   }
-  renderHeader() {
-    return <Header 
-      tableClicked = {this.tableClicked}
-      tables = {this.state.tables}
-      otables = {this.state.otables}
-    />;
-  }
-  renderMainData() {
-    return <MainData 
-      table={this.state.table} 
-      headers={this.state.headers}
-      headwidth={this.state.headwidth}
-      rows={this.state.rows}
-      editing = {this.editing}
-    />
-  }
-  renderPages() {
-    return <Pages 
-      table={this.state.table} 
-      pages={this.state.pages}
-      pageClick={this.pageClick}
-    />
-  }
   renderEditor() {
     if (this.state.editing) {
       return <Editor 
@@ -433,11 +396,25 @@ class App extends React.Component {
   render() {
     return (
       <div className="App">
-        {this.renderHeader()}
+        <Header 
+          tableClicked = {this.tableClicked}
+          tables = {this.state.tables}
+          otables = {this.state.otables}
+        />
         <div id = "main">
           {this.renderEditor()}
-          {this.renderMainData()}
-          {this.renderPages()}
+          <MainData 
+            table={this.state.table} 
+            headers={this.state.headers}
+            headwidth={this.state.headwidth}
+            rows={this.state.rows}
+            editing = {this.editing}
+          />
+          <Pages 
+            table={this.state.table} 
+            pages={this.state.pages}
+            pageClick={this.pageClick}
+          />
         </div>
       </div>
     );
