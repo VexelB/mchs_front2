@@ -119,6 +119,13 @@ class Editor extends React.Component {
       else if (v.includes('date')){
         output.push(<div key={v}>{assoc[v]} <input className="input" id={v} type="date" placeholder='ГГГГ-ММ-ДД' defaultValue={this.props.data[i]}/></div>)
       }
+      else if (v === 'id') {
+        if (this.props.data[i]) {
+          output.push(<div key={v}>{assoc[v]} <input readOnly className="input" id={v} key={"input"+v} defaultValue={this.props.rows.length+1} /></div>)
+        } else {
+          output.push(<div key={v}>{assoc[v]} <input readOnly className="input" id={v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
+        }
+      }
       else {
         output.push(<div key={v}>{assoc[v]} <input className="input" id={v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
       }
@@ -390,6 +397,7 @@ class App extends React.Component {
         data = {this.state.data}
         options = {this.state.options}
         ids = {this.state.ids}
+        rows = {this.state.rows}
       />
     }
   }
