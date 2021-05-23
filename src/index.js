@@ -123,7 +123,7 @@ class Editor extends React.Component {
         if (this.props.data[i]) {
           output.push(<div key={v}>{assoc[v]} <input readOnly className="input" id={v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
         } else {
-          output.push(<div key={v}>{assoc[v]} <input readOnly className="input" id={v} key={"input"+v} defaultValue={this.props.rows.length+1} /></div>)
+          output.push(<div key={v}>{assoc[v]} <input className="input" id={v} key={"input"+v} defaultValue={this.props.rows.length+1} /></div>)
         }
       }
       else {
