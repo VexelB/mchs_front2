@@ -23,6 +23,7 @@
 .table {
   display: inline-block;
   border: solid 1px black; 
+  overflow-x: auto;
   /* padding: 2px; */
 }
 nav {

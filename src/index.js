@@ -119,13 +119,6 @@ class Editor extends React.Component {
       else if (v.includes('date')){
         output.push(<div key={v}>{assoc[v]} <input className="input" id={v} type="date" placeholder='ГГГГ-ММ-ДД' defaultValue={this.props.data[i]}/></div>)
       }
-      else if (v === 'id') {
-        if (this.props.data[i]) {
-          output.push(<div key={v}>{assoc[v]} <input readOnly className="input" id={v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
-        } else {
-          output.push(<div key={v}>{assoc[v]} <input className="input" id={v} key={"input"+v} defaultValue={this.props.rows.length+1} /></div>)
-        }
-      }
       else {
         output.push(<div key={v}>{assoc[v]} <input className="input" id={v} key={"input"+v} defaultValue={this.props.data[i]} /></div>)
       }
@@ -197,7 +190,6 @@ class App extends React.Component {
     }
     reqbody.sql += ` order by ${this.state.table}.${this.state.headers[0]} LIMIT ${50 * (this.state.page - 1)}, 50`
     ws.send(JSON.stringify(reqbody));
-    reqbody = {};
   }
   vac = () => {
     let result = []
@@ -220,9 +212,6 @@ class App extends React.Component {
   }
   tableClicked = (event) => {
     this.setState({table: event.target.id, page: 1})
-    setTimeout(()=>{
-      
-    },10)
     ws.send(JSON.stringify({action: "get", table: event.target.id}))
   }
   valueChange = (event) => {
@@ -250,8 +239,7 @@ class App extends React.Component {
       } else {
         ws.send(JSON.stringify({"action": "change", "table": this.state.table, "oldid": this.state.oldid, "values": this.vac(), "headers": this.state.headers}))
       }
-      // this.setState({editing: !this.state.editing})
-      setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
+      ws.send(JSON.stringify({action: "get", table: this.state.table}))
     }
     else if (event.target.className === "rowEl"){
       this.setState({editing: !this.state.editing, data: this.state.rows[event.target.parentElement.id], oldid: event.target.parentElement.firstChild.innerHTML})
@@ -267,7 +255,6 @@ class App extends React.Component {
           setTimeout(()=>{ws.send(JSON.stringify({action: "get", table: this.state.table}))}, 10) 
         }
       }
-      // this.setState({editing: !this.state.editing})
     }
     else {
       this.setState({editing: !this.state.editing, data: [], oldid: ""})
@@ -283,109 +270,204 @@ class App extends React.Component {
     }
     ws.onmessage = (d) => {
       let data = JSON.parse(d.data)
-      if (data.action === "assoc") {
-        for (let i in data.content) {
-          assoc[data.content[i].name] = data.content[i].value
-        }
-      }
-      else if (data.action === "message") {
-        alert(data.content)
-      }
-      else if (data.action === "success") {
-        this.setState({editing: !this.state.editing, data: [], oldid: ""})
-      }
-      else if (data.action === "options"){
-        let temp = this.state.options
-        data.content.forEach((a) => {
-          if (a.id) {
-            let temp = this.state.ids
-            temp[a.name] = {}
-            this.setState({ids: temp})
-          } 
-          temp[a.name] = []
-        })
-        data.content.forEach((a) => {
-          if (a.id) {
-            let temp = this.state.ids
-            temp[a.name][a.value] = a.id
-            this.setState({ids: temp})
+      switch(data.action) {
+        case "assoc":
+          for (let i in data.content) {
+            assoc[data.content[i].name] = data.content[i].value
           }
-          temp[a.name] = [...temp[a.name], a.value]
-        })
-        this.setState({options: temp})
-      }
-      else if (data.action === "tables"){
-        let temp = this.state.options
-        data.content.forEach((a) => {
-          temp["tables"] = []
-        })
-        data.content.forEach((a) => {
-          if (!ignore.includes(a.name)){
-            if (a.name === 'apparat' || a.name === "balloon" || a.name === "passedapprovals" || a.name === "people" || a.name === "section"){
-              this.setState({tables: [...this.state.tables, a.name]})
-              temp["tables"] = [...temp["tables"], assoc[a.name]]
-            } else {
-              this.setState({otables: [...this.state.otables, a.name]})
-              // temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+          break;
+        case "message":
+          alert(data.content)
+          break;
+        case "success":
+          this.setState({editing: !this.state.editing, data: [], oldid: ""})
+          break;
+        case "options":
+          let temp = this.state.options
+          data.content.forEach((a) => {
+            if (a.id) {
+              let temp = this.state.ids
+              temp[a.name] = {}
+              this.setState({ids: temp})
+            } 
+            temp[a.name] = []
+          })
+          data.content.forEach((a) => {
+            if (a.id) {
+              let temp = this.state.ids
+              temp[a.name][a.value] = a.id
+              this.setState({ids: temp})
+            }
+            temp[a.name] = [...temp[a.name], a.value]
+          })
+          this.setState({options: temp})
+          break;
+        case "tables":
+          let temp = this.state.options
+          data.content.forEach((a) => {
+            temp["tables"] = []
+          })
+          data.content.forEach((a) => {
+            if (!ignore.includes(a.name)){
+              if (a.name === 'apparat' || a.name === "balloon" || a.name === "passedapprovals" || a.name === "people" || a.name === "section"){
+                this.setState({tables: [...this.state.tables, a.name]})
+                temp["tables"] = [...temp["tables"], assoc[a.name]]
+              } else {
+                this.setState({otables: [...this.state.otables, a.name]})
+                // temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+              }
+            }
+          })
+          this.setState({options: temp})
+          break;
+        case "pages":
+          this.setState({headers: [], pages: [], rows: []})
+          for (let i in data.content[0]) {
+            this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
+          }
+          for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
+            this.setState({pages: [...this.state.pages, i]})
+          }
+          setTimeout(()=>{this.get(this.state.table)},10)
+          break;
+        case "rows":
+          for (let i in data.content) {
+            let temp = []
+            if (this.state.headers.includes("password")){
+              let temp1 = this.state.pass
+              temp1[data.content[i].id] = data.content[i].password
+              this.setState({pass: temp1})
+              temp.push(Object.values(data.content[i]).map((a)=>{
+                if (Object.keys(data.content[i]).find(key => data.content[i][key] === a) === "password"){
+                  return "*****"
+                }
+                else {
+                  return a
+                }
+              }))
+              this.setState({rows:  temp})
+            }
+            else {
+              this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
             }
           }
-        })
-        this.setState({options: temp})
-      }
-      else if (data.action === "datas"){
-        data.content.forEach((a) => {
-          let temp = {}
-          for (let i in a) {
-            temp[i] = a[i]
+          for (let i in this.state.headers) {
+            let items = []
+            items.push(document.querySelector(`.table #${this.state.headers[i]}`))
+            for (let j in this.state.rows) {
+              items.push(document.querySelector(`#row${j}${this.state.headers[i]}`))
+            }
+            let b = []
+            items.forEach((a)=>{b.push(a.offsetWidth)})
+            items.forEach((i) => {
+              i.setAttribute("style", `width: ${Math.max(...b)}px`)
+            })
           }
-          datas.push(temp)
-        })
+
+          break;
       }
-      else if (data.action === "pages") {
-        this.setState({headers: [], pages: [], rows: []})
-        for (let i in data.content[0]) {
-          this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
-        }
-        for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
-          this.setState({pages: [...this.state.pages, i]})
-        }
-        setTimeout(()=>{this.get(this.state.table)},10)
-        
-      }
-      else if (data.action === "rows") {
-        for (let i in data.content) {
-          let temp = []
-          if (this.state.headers.includes("password")){
-            let temp1 = this.state.pass
-            temp1[data.content[i].id] = data.content[i].password
-            this.setState({pass: temp1})
-            temp.push(Object.values(data.content[i]).map((a)=>{
-              if (Object.keys(data.content[i]).find(key => data.content[i][key] === a) === "password"){
-                return "*****"
-              }
-              else {
-                return a
-              }
-            }))
-            this.setState({rows:  temp})
-          }
-          else {
-            this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
-          }
-        }
-        for (let i in this.state.headers) {
-          let items = []
-          items.push(document.querySelector(`.table #${this.state.headers[i]}`))
-          for (let j in this.state.rows) {
-            items.push(document.querySelector(`#row${j}${this.state.headers[i]}`))
-          }
-          let b = []
-          items.forEach((a)=>{b.push(a.offsetWidth)})
-          items.forEach((i) => {
-            i.setAttribute("style", `width: ${Math.max(...b)}px`)
-          })
-        }
-      }
+      // if (data.action === "assoc") {
+      //   for (let i in data.content) {
+      //     assoc[data.content[i].name] = data.content[i].value
+      //   }
+      // }
+      // else if (data.action === "message") {
+      //   alert(data.content)
+      // }
+      // else if (data.action === "success") {
+      //   this.setState({editing: !this.state.editing, data: [], oldid: ""})
+      // }
+      // else if (data.action === "options"){
+      //   let temp = this.state.options
+      //   data.content.forEach((a) => {
+      //     if (a.id) {
+      //       let temp = this.state.ids
+      //       temp[a.name] = {}
+      //       this.setState({ids: temp})
+      //     } 
+      //     temp[a.name] = []
+      //   })
+      //   data.content.forEach((a) => {
+      //     if (a.id) {
+      //       let temp = this.state.ids
+      //       temp[a.name][a.value] = a.id
+      //       this.setState({ids: temp})
+      //     }
+      //     temp[a.name] = [...temp[a.name], a.value]
+      //   })
+      //   this.setState({options: temp})
+      // }
+      // else if (data.action === "tables"){
+      //   let temp = this.state.options
+      //   data.content.forEach((a) => {
+      //     temp["tables"] = []
+      //   })
+      //   data.content.forEach((a) => {
+      //     if (!ignore.includes(a.name)){
+      //       if (a.name === 'apparat' || a.name === "balloon" || a.name === "passedapprovals" || a.name === "people" || a.name === "section"){
+      //         this.setState({tables: [...this.state.tables, a.name]})
+      //         temp["tables"] = [...temp["tables"], assoc[a.name]]
+      //       } else {
+      //         this.setState({otables: [...this.state.otables, a.name]})
+      //         // temp["tables"] = [...temp["tables"], [assoc[a.name], '-']]
+      //       }
+      //     }
+      //   })
+      //   this.setState({options: temp})
+      // }
+      // else if (data.action === "datas"){
+      //   data.content.forEach((a) => {
+      //     let temp = {}
+      //     for (let i in a) {
+      //       temp[i] = a[i]
+      //     }
+      //     datas.push(temp)
+      //   })
+      // }
+      // else if (data.action === "pages") {
+      //   this.setState({headers: [], pages: [], rows: []})
+      //   for (let i in data.content[0]) {
+      //     this.setState({headers: [...this.state.headers, i], headwidth: [...this.state.headwidth, 1]})
+      //   }
+      //   for (let i = 1; i <= Math.ceil(data.content.length / 50); i++) {
+      //     this.setState({pages: [...this.state.pages, i]})
+      //   }
+      //   this.get(this.state.table)
+      // }
+      // else if (data.action === "rows") {
+      //   for (let i in data.content) {
+      //     let temp = []
+      //     if (this.state.headers.includes("password")){
+      //       let temp1 = this.state.pass
+      //       temp1[data.content[i].id] = data.content[i].password
+      //       this.setState({pass: temp1})
+      //       temp.push(Object.values(data.content[i]).map((a)=>{
+      //         if (Object.keys(data.content[i]).find(key => data.content[i][key] === a) === "password"){
+      //           return "*****"
+      //         }
+      //         else {
+      //           return a
+      //         }
+      //       }))
+      //       this.setState({rows:  temp})
+      //     }
+      //     else {
+      //       this.setState({rows: [...this.state.rows, Object.values(data.content[i])]})
+      //     }
+      //   }
+      //   for (let i in this.state.headers) {
+      //     let items = []
+      //     items.push(document.querySelector(`.table #${this.state.headers[i]}`))
+      //     for (let j in this.state.rows) {
+      //       items.push(document.querySelector(`#row${j}${this.state.headers[i]}`))
+      //     }
+      //     let b = []
+      //     items.forEach((a)=>{b.push(a.offsetWidth)})
+      //     items.forEach((i) => {
+      //       i.setAttribute("style", `width: ${Math.max(...b)}px`)
+      //     })
+      //   }
+      // }
       
     }
   }
@@ -397,7 +479,6 @@ class App extends React.Component {
         data = {this.state.data}
         options = {this.state.options}
         ids = {this.state.ids}
-        rows = {this.state.rows}
       />
     }
   }
